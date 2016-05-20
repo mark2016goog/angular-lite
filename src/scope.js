@@ -2,19 +2,25 @@
 
 
 class Scope {
-	constructor(){
+	constructor () {
 		this.$$watchers = []
 	}
-	$watch(watchFn, listenerFn) {
+	$watch (watchFn, listenerFn) {
 		let watchers = {
 			watchFn:watchFn,
 			listenerFn:listenerFn
 		}
 		this.$$watchers.push(watchers)
 	}
-	$digest() {
-		this.$$watchers.forEach((val)=>{
-			val.listenerFn()
+	$digest () {
+		let newVal, oldVal
+		this.$$watchers.forEach((watcher)=>{
+			newVal = watcher.watchFn(this)
+			oldVal = watcher.last
+			if (newVal!==oldVal) {
+				watcher.last = newVal
+				watcher.listenerFn(newVal,oldVal,this)
+			};
 		})
 	};
 
