@@ -51,8 +51,8 @@ module.exports = {
     './src/index'
   ],
   output: {
-    path: __dirname,
-    filename: 'bundle.js',
+    path: path.join(__dirname, 'dist'),
+    filename: 'myangular.js',
     publicPath: '/static/'
   },
   resolve: {
@@ -67,7 +67,7 @@ module.exports = {
     loaders: [
       {
         test: /\.jsx?$/,
-        loaders: ['react-hot', 'babel'],
+        loaders: ['babel'],
         include: path.join(__dirname, 'src')
       }
     ]

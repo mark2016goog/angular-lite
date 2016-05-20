@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "build": "./node_modules/.bin/webpack --config webpack.config.production.js",
+    "build": "npm run build_dev && npm run build_pro",
+    "build_dev": "./node_modules/.bin/webpack --config webpack.config.js",
+    "build_pro": "./node_modules/.bin/webpack --config webpack.config.production.js",
     "test": "./node_modules/karma/bin/karma start --single-run --no-auto-watch karma.config.js",
     "test_watch": "./node_modules/karma/bin/karma start --auto-watch --no-single-run karma.config.js",
     "lint": "eslint src/**"

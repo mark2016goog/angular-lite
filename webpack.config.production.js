@@ -46,7 +46,7 @@ module.exports = {
   entry: './src/index',
   output: {
     path: path.join(__dirname, 'dist'),
-    filename: 'bundle.js',
+    filename: 'myangular.min.js',
     publicPath: '/static/'
   },
   resolve: {
