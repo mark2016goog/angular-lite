@@ -194,7 +194,6 @@ describe('Scope', () => {
 		expect(scope.counter).toBe(2)
 	})
 
-
 	it('execute $evalAsync function later in the same cycle',()=>{
 		scope.aValue = [1,2,3]
 		scope.asyncEvaluated = false
@@ -212,7 +211,54 @@ describe('Scope', () => {
 		expect(scope.asyncEvaluatedImmediately).toBe(false)
 	})
 
+	it('execute $evalAsync function add by watch function ',()=>{
+		scope.aValue = [1,2,3]
+		scope.asyncEvaluated = false
 
+		scope.$watch((scope)=>{
+			if (!scope.asyncEvaluated) {
+				scope.$evalAsync((scope)=>{
+					scope.asyncEvaluated = true
+				})
+			};
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{})
+
+		scope.$digest()
+		expect(scope.asyncEvaluated).toBe(true)
+	})
+
+
+
+	it('execute $evalAsync function even when not dirty ',()=>{
+		scope.aValue = [1,2,3]
+		scope.asyncEvaluatedTimes = 0
+
+		scope.$watch((scope)=>{
+			if (scope.asyncEvaluatedTimes<2) {
+				scope.$evalAsync((scope)=>{
+					scope.asyncEvaluatedTimes++
+				})
+			};
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{})
+
+		scope.$digest()
+		expect(scope.asyncEvaluatedTimes).toBe(2)
+	})
+	it('eventually halts $evalAsync add by watchers ',()=>{
+		scope.aValue = [1,2,3]
+
+		scope.$watch((scope)=>{
+			scope.$evalAsync((scope)=>{})
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{})
+
+		expect(()=>scope.$digest()).toThrow()
+	})
+
+
+	
 
 
 
