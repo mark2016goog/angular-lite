@@ -1,11 +1,23 @@
 var Scope = require('../src/scope')
 
-describe('1+1', () => {
+describe('Scope', () => {
+  var scope
+  beforeEach(()=>{
+  	scope = new Scope
+  })
 
   it('should be uses as an object', () => {
-    var scope = new Scope()
     scope.aProperty = 1
     expect(scope.aProperty ).toBe(1);
+    scope.aProperty = 3
+    expect(scope.aProperty ).toBe(3);
   });
+  it('digest',()=>{
+  	var watchFn = ()=>'wat'
+  	var listenFn = jasmine.createSpy()
+  	scope.$watch(watchFn,listenFn)
+  	scope.$digest()
+  	expect(listenFn).toHaveBeenCalled()
+  })
 
 });
