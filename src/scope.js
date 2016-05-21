@@ -9,6 +9,7 @@ class Scope {
     // $evalasync队列
     this.$$asyncQueue = []
     this.$$applyAsyncQueue = []
+    this.$$postDigestQueue = []
     this.$$applyAsyncId = null
     this.$$phase = null
   }
@@ -46,6 +47,10 @@ class Scope {
       };
     } while (dirty||this.$$asyncQueue.length)
     this.$clearPhase()
+
+    while(this.$$postDigestQueue.length){
+      this.$$postDigestQueue.shift()()
+    }
 
   }
   $eval(fn,arg){
@@ -92,6 +97,9 @@ class Scope {
       this.$$applyAsyncQueue.shift()()
     }
     this.$$applyAsyncId = null
+  }
+  $$postDigest(fn){
+    this.$$postDigestQueue.push(fn)
   }
   $$digestOnce() {
     let newVal, oldVal, dirty

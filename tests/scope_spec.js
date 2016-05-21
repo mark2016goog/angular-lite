@@ -379,6 +379,32 @@ describe('Scope', () => {
 
 	})
 
+	it('runs a $$postDigest function after each digest',()=>{
+		scope.counter = 0
+		scope.$$postDigest(()=>{
+			scope.counter++
+		})
+		expect(scope.counter).toBe(0)
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+	})
+	it('does not include $$postDigest in the digest',()=>{
+		scope.aValue = 'woniu'
+		scope.$$postDigest(()=>{
+			scope.aValue = 'mushbroom'
+		})
+		scope.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.watcheValue = newVal
+		})
+		scope.$digest()
+		expect(scope.watcheValue).toBe('woniu')
+		// expect(scope.aValue).toBe('woniu')
+		scope.$digest()
+		expect(scope.watcheValue).toBe('mushbroom')
+	})
+
 
 
 
