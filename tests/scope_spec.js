@@ -406,10 +406,84 @@ describe('Scope', () => {
 	})
 
 
+	it('caches exception in watch function and continue',()=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+		scope.$watch(scope=>{
+			throw 'error'
+		},(newVal,oldVal,scope)=>{})
+		scope.$watch(scope=>{
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
 
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+	})
+	it('caches exception in listener function and continue',()=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+		scope.$watch(scope=>{
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{
+			throw 'error'
+		})
+		scope.$watch(scope=>{
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
 
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+	})
 
+	it('catch exception in $evalAsync',(done)=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+		scope.$watch(scope=>{
+			return scope.aValue
+		},(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
+		scope.$evalAsync(scope=>{
+			throw 'evalAsync Error'
+		})
+		setTimeout(()=>{
+			expect(scope.counter).toBe(1)
+			done()
+		})
+	})
 
+	it('catch exception in $applyAsync',(done)=>{
+
+		scope.$applyAsync(scope=>{
+			throw 'applyAsync Error'
+		})
+		scope.$applyAsync(scope=>{
+			throw 'applyAsync Error'
+		})
+		scope.$applyAsync(scope=>{
+			scope.applied = true
+		})
+		setTimeout(()=>{
+			expect(scope.applied).toBe(true)
+			done()
+		})
+	})
+
+	it('catch exception in $postDigest',(done)=>{
+		var didRun = false
+		scope.$$postDigest(scope=>{
+			throw 'postDigest Error'
+		})
+		scope.$$postDigest(scope=>{
+			didRun = true
+		})
+		scope.$digest()
+		expect(didRun).toBe(true)
+	})
 
 
 
