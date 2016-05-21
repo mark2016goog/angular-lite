@@ -258,7 +258,127 @@ describe('Scope', () => {
 	})
 
 
-	
+	it('has a $$parse field whose value is the current digest phase',()=>{
+		scope.aValue = [1,2,3]
+		scope.phaseWatch = undefined
+		scope.phaseListen = undefined
+		scope.phaseApply = undefined
+
+		scope.$watch(scope=>{
+			scope.phaseWatch = scope.$$phase
+		},(newval,oldval,scope)=>{
+			scope.phaseListen = scope.$$phase			
+		})
+
+		scope.$apply(scope=>{
+			scope.phaseApply = scope.$$phase			
+		})
+		expect(scope.phaseWatch).toBe('$digest')
+		expect(scope.phaseListen).toBe('$digest')
+		expect(scope.phaseApply).toBe('$apply')
+
+	})
+
+	it('schedules a digest in $evalAsync',(done)=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+
+		scope.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
+
+		scope.$evalAsync(()=>{})
+		expect(scope.counter).toBe(0)
+
+		setTimeout(()=>{
+			expect(scope.counter).toBe(1)
+			done()
+		},50)
+	})
+	it('allow asyn $apply with $applyAsync',(done)=>{
+		scope.counter = 0
+		scope.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.$applyAsync(scope=>{
+			scope.aValue = 'woniu'
+		})
+		expect(scope.counter).toBe(1)
+
+		setTimeout(()=>{
+			expect(scope.counter).toBe(2)
+			done()
+		},50)
+	})
+	it('never executes $applyAsync function in this same ciycle',(done)=>{
+		scope.aValue = [1,2,3]
+		scope.asyncApplied = false
+
+
+		scope.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+
+			scope.$applyAsync(scope=>{
+				scope.asyncApplied = true
+			})
+		})
+		scope.$digest()
+		expect(scope.asyncApplied).toBe(false)
+		setTimeout(()=>{
+			expect(scope.asyncApplied).toBe(true)
+			done()
+		},50)
+	})
+	it('coalesces many calss to $applyAsync',done=>{
+		scope.counter = 0
+		scope.$watch(scope=>{
+			scope.counter++
+			return scope.aValue	
+		},(newVal,oldVal,scope)=>{
+		})
+
+		scope.$applyAsync(scope=>{
+			scope.aValue = 'woniu'
+		})
+		scope.$applyAsync(scope=>{
+			scope.aValue = 'mushbroom'
+		})
+
+		setTimeout(()=>{
+			expect(scope.counter).toBe(2)
+			done()
+		},50)
+
+	})
+
+	it('cancels and flush $applyAsync if digested first',done=>{
+		scope.counter = 0
+		scope.$watch(scope=>{
+			scope.counter++
+			return scope.aValue	
+		},(newVal,oldVal,scope)=>{
+		})
+
+		scope.$applyAsync(scope=>{
+			scope.aValue = 'woniu'
+		})
+		scope.$applyAsync(scope=>{
+			scope.aValue = 'mushbroom'
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		expect(scope.aValue).toBe('mushbroom')
+
+
+		setTimeout(()=>{
+			expect(scope.counter).toBe(2)
+			done()
+		},50)
+
+	})
+
 
 
 
