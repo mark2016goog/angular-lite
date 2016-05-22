@@ -41,20 +41,22 @@ class Scope {
       };
     }
   }
-  $new(isolated){
+  $new(isolated, parent){
+
     let childScope
+    parent = parent||this
     if (isolated) {
       childScope = new Scope()
-      childScope.$root = this.$root
-      childScope.$$asyncQueue = this.$$asyncQueue
-      childScope.$$postDigestQueue = this.$$postDigestQueue
-      childScope.$$applyAsyncQueue = this.$$applyAsyncQueue
+      childScope.$root = parent.$root
+      childScope.$$asyncQueue = parent.$$asyncQueue
+      childScope.$$postDigestQueue = parent.$$postDigestQueue
+      childScope.$$applyAsyncQueue = parent.$$applyAsyncQueue
     }else{
       childScope = Object.create(this)
 
     }
     // 保存在$$children中
-    this.$$children.push(childScope)
+    parent.$$children.push(childScope)
     // 每个继承的scope有自己的wathcers
     childScope.$$watchers = []
     childScope.$$children = []

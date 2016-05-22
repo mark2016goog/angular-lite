@@ -889,6 +889,26 @@ describe('inheritance',()=>{
 			done()
 		},50)
 
+	})
+	it('can take some other scope as the parent',()=>{
+		let prototyParent = new Scope()
+		let hierarchyParent = new Scope()
+		let child = prototyParent.$new(false,hierarchyParent)
+
+		prototyParent.aValue = 42
+		expect(child.aValue).toBe(42)
+
+		child.counter = 0
+		child.$watch(scope=>{
+			scope.counter++
+		})
+
+		prototyParent.$digest()
+		expect(child.counter).toBe(0)
+
+		hierarchyParent.$digest()
+		expect(child.counter).toBe(2)
+
 
 	})
 })
