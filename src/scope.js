@@ -182,6 +182,15 @@ class Scope {
     };
 
   }
+  $$everyScope(fn){
+    if (fn(this)) {
+      return this.$$children.every(child=>{
+        return child.$$everyScope(fn)
+      })
+    }else{
+      return false
+    }
+  }
   $$flushApplyAsync() {
     while (this.$$applyAsyncQueue.length) {
       try{
@@ -197,27 +206,34 @@ class Scope {
     this.$$postDigestQueue.push(fn)
   }
   $$digestOnce() {
-    let newVal, oldVal, dirty
-    _.forEachRight(this.$$watchers, (watcher) => {
+    let dirty
+    let continueLoop = true
+    this.$$everyScope(scope=>{
+      let newVal, oldVal
 
-      try {
-        newVal = watcher.watchFn(this)
-        oldVal = watcher.last
-        if (!this.$$areEqual(newVal, oldVal, watcher.valueEq)) {
-          this.$$lastDirtyWatch = watcher
-          watcher.last = (watcher.valueEq ? _.cloneDeep(newVal) : newVal)
-          watcher.listenerFn(newVal, (oldVal === initWatchFn ? newVal : oldVal), this)
-          dirty = true
-        } else if (this.$$lastDirtyWatch === watcher) {
-          //lodash的foreach return false 就顺便中断了
-          return false
+      _.forEachRight(scope.$$watchers, (watcher) => {
+        try {
+          newVal = watcher.watchFn(scope)
+          oldVal = watcher.last
+          if (!scope.$$areEqual(newVal, oldVal, watcher.valueEq)) {
+            scope.$$lastDirtyWatch = watcher
+            watcher.last = (watcher.valueEq ? _.cloneDeep(newVal) : newVal)
+            watcher.listenerFn(newVal, (oldVal === initWatchFn ? newVal : oldVal), scope)
+            dirty = true
+          } else if (scope.$$lastDirtyWatch === watcher) {
+            continueLoop = false
+            //lodash的foreach return false 就顺便中断了
+            return false
+          }
+
+        }catch(e) {
+          console.log(e)
         }
 
-      }catch(e) {
-        console.log(e)
-      }
-
+      })      
+      return continueLoop
     })
+
     return dirty
   }
   $$areEqual(newVal, oldVal, valueEq) {
