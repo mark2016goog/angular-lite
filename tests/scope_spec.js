@@ -911,6 +911,29 @@ describe('inheritance',()=>{
 
 
 	})
+	it('is no longer digestes when $destroy has been calles',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+
+		child.aValue = [1,2,3]
+		child.counter = 0
+		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		}, true)
+
+		parent.$digest()
+		expect(child.counter).toBe(1)
+
+		child.aValue.push(4)
+		parent.$digest()
+		expect(child.counter).toBe(2)
+
+		child.$destroy()
+		child.aValue.push(5)
+		parent.$digest()
+		expect(child.counter).toBe(2)
+
+	})
 })
 
 

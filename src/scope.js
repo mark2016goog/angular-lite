@@ -60,6 +60,7 @@ class Scope {
     // 每个继承的scope有自己的wathcers
     childScope.$$watchers = []
     childScope.$$children = []
+    childScope.$parent = parent
     return childScope
   }
   // 监听多个
@@ -267,6 +268,16 @@ class Scope {
   }
   $clearPhase() {
     this.$$phase = null
+  }
+  $destroy(){
+    if (this.$parent) {
+      let siblings = this.$parent.$$children
+      let indexOfThis = siblings.indexOf(this)
+      if (indexOfThis>=0) {
+        siblings.splice(indexOfThis,1)
+      };
+    }
+    this.$$watchers = null
   }
 }
 module.exports = Scope;
