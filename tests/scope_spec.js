@@ -775,6 +775,7 @@ describe('inheritance',()=>{
 		expect(parent.$$children[1]).toBe(child2)
 		expect(child1.$$children.length).toBe(0)
 		expect(child2.$$children.length).toBe(1)
+		
 		expect(child2.$$children[0]).toBe(child2_1)
 
 	})
