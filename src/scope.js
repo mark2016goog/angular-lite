@@ -45,6 +45,10 @@ class Scope {
     let childScope
     if (isolated) {
       childScope = new Scope()
+      childScope.$root = this.$root
+      childScope.$$asyncQueue = this.$$asyncQueue
+      childScope.$$postDigestQueue = this.$$postDigestQueue
+      childScope.$$applyAsyncQueue = this.$$applyAsyncQueue
     }else{
       childScope = Object.create(this)
 
@@ -117,8 +121,8 @@ class Scope {
       //用$$phase记录状态
     this.$begainPhase('$digest')
 
-    if (this.$$applyAsyncId) {
-      clearTimeout(this.$$applyAsyncId)
+    if (this.$root.$$applyAsyncId) {
+      clearTimeout(this.$root.$$applyAsyncId)
       this.$$flushApplyAsync()
     };
     do {
@@ -179,7 +183,7 @@ class Scope {
     this.$$applyAsyncQueue.push(() => {
       this.$eval(fn)
     })
-    if (this.$$applyAsyncId === null) {
+    if (this.$root.$$applyAsyncId === null) {
       this.$$applyAsyncId = setTimeout(() => {
         this.$apply(() => {
             this.$$flushApplyAsync()
@@ -207,7 +211,7 @@ class Scope {
         console.log(e)
       }
     }
-    this.$$applyAsyncId = null
+    this.$root.$$applyAsyncId = null
   }
   $$postDigest(fn) {
     this.$$postDigestQueue.push(fn)
