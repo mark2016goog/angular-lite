@@ -1,9 +1,13 @@
 let Scope = require('../src/scope')
 let _ = require('lodash')
 describe('Scope', () => {
+
+
+describe('digest',()=>{
+
 	let scope
 	beforeEach(() => {
-		scope = new Scope
+		scope = new Scope()
 	})
 
 	it('should be uses as an object', () => {
@@ -473,31 +477,319 @@ describe('Scope', () => {
 		})
 	})
 
-	it('catch exception in $postDigest',(done)=>{
+	it('catch exception in $postDigest',()=>{
 		var didRun = false
-		scope.$$postDigest(scope=>{
+		scope.$$postDigest(()=>{
 			throw 'postDigest Error'
 		})
-		scope.$$postDigest(scope=>{
+		scope.$$postDigest(()=>{
 			didRun = true
 		})
 		scope.$digest()
 		expect(didRun).toBe(true)
+
+
+	})
+
+	it('allow destroying a $watch with a removal function',()=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+
+		let destroyWatch = scope.$watch(scope=>scope.aValue,()=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.aValue = 'mushbroom'
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+
+		scope.aValue = 'test'
+		destroyWatch()
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+
+
+	})
+
+	it('allow destroy watcher during digest',()=>{
+		scope.aValue = 'woniu'
+		var watchCalls = []
+		scope.$watch(scope=>{
+			watchCalls.push('first')
+			return scope.aValue
+		})
+		var destroyWatch = scope.$watch(scope=>{
+			watchCalls.push('second')
+			destroyWatch()
+		})
+		scope.$watch(scope=>{
+			watchCalls.push('third')
+			return scope.aValue
+		})
+		scope.$digest()
+		expect(watchCalls).toEqual(['first','second','third','first','third'])
+	})
+
+	it('allows a watch to destroy another during digest',()=>{
+		scope.aValue = 'woniu'
+		scope.counter = 0
+		scope.$watch(scope=>scope.aValue,()=>{
+			destroyWatch()
+		})
+		var destroyWatch = scope.$watch(()=>{},()=>{})
+		scope.$watch(scope=>scope.aValue,()=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+	})
+
+})
+
+describe('watchGroup',()=>{
+	let scope
+	beforeEach(() => {
+		scope = new Scope()
 	})
 
 
 
+	it('takes watches as an array and calls listener with arrays',()=>{
+		var gotNewVals, gotOldVals
+		scope.aValue = 1
+		scope.anotherValue = 2
+		scope.$watchGroup([
+			scope=>scope.aValue,
+			scope=>scope.anotherValue
+		],(newVals,oldVals,scope)=>{
+			gotNewVals = newVals
+			gotOldVals = oldVals
+		})
+		scope.$digest()
+		expect(gotNewVals).toEqual([1,2])
+		expect(gotOldVals).toEqual([1,2])
+	})
 
 
+	it('only call listener once in one digest',()=>{
+		var counter = 0
+		scope.aValue = 1
+		scope.anotherValue = 2
+		scope.$watchGroup([
+			scope=>scope.aValue,
+			scope=>scope.anotherValue
+		],(newVals,oldVals,scope)=>{
+			counter++
+		})
+		scope.$digest()
+		expect(counter).toBe(1)
+	})
+
+	it('use same array of new and old on first run',()=>{
+		var gotNewVals, gotOldVals
+		scope.aValue = 1
+		scope.anotherValue = 2
+		scope.$watchGroup([
+			scope=>scope.aValue,
+			scope=>scope.anotherValue
+		],(newVals,oldVals,scope)=>{
+			gotNewVals = newVals
+			gotOldVals = oldVals
+		})
+		scope.$digest()
+		expect(gotNewVals).toBe(gotOldVals)
+	})
+
+	it('use different array of new and old on subsequent run',()=>{
+		var gotNewVals, gotOldVals
+		scope.aValue = 1
+		scope.anotherValue = 2
+		scope.$watchGroup([
+			scope=>scope.aValue,
+			scope=>scope.anotherValue
+		],(newVals,oldVals,scope)=>{
+			gotNewVals = newVals
+			gotOldVals = oldVals
+		})
+		scope.$digest()
+		scope.anotherValue = 3
+		scope.$digest()
+		expect(gotNewVals).toEqual([1,3])
+		expect(gotOldVals).toEqual([1,2])
+	})
+	it('call the listrner once when the watch array in empty',()=>{
+		var gotNewVals, gotOldVals
+		scope.aValue = 1
+		scope.anotherValue = 2
+		scope.$watchGroup([],(newVals,oldVals,scope)=>{
+			gotNewVals = newVals
+			gotOldVals = oldVals
+		})
+		scope.$digest()
+		expect(gotNewVals).toEqual([])
+		expect(gotOldVals).toEqual([])
+	})
+
+	it('watchGroupt can be deregisteed',()=>{
+		scope.counter = 0
+		scope.aValue = 1
+		scope.anotherValue = 2
+		var destroyGroup = scope.$watchGroup([
+			scope=>scope.aValue,
+			scope=>scope.anotherValue
+		],(newVals,oldVals,scope)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		scope.anotherValue = 3
+		destroyGroup()
+		scope.$digest()
+		expect(scope.counter).toEqual(1)
+	})
+
+	it('does not call the zero-watch listener when deregistered first',()=>{
+		scope.counter = 0
+		var destroyGroup = scope.$watchGroup([],(newVals,oldVals,scope)=>{
+			scope.counter++
+		})
+		destroyGroup()
+		scope.$digest()
+		expect(scope.counter).toEqual(0)
+	})
+
+})
+
+describe('inheritance',()=>{
+	// let scope
+	// beforeEach(() => {
+	// 	scope = new Scope
+	// })
 
 
+	it('inherits the parent properties',()=>{
+		let parent = new Scope()
+		parent.aValue = [1,2,3]
+		let child = parent.$new()
+		expect(child.aValue).toEqual([1,2,3])
+	})	
+	it('does not cause a parent to inherit its properties',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		child.aValue = [1,2,3]
+		expect(parent.aValue).toBeUndefined()
+	})	
+	it('inherits the parent properties whenever they are defined',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.aValue = [1,2,3]
 
+		expect(child.aValue).toEqual([1,2,3])
+	})	
+	it('can manipulate a paret scope property',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.aValue = [1,2,3]
 
+		child.aValue.push(4)
+		expect(parent.aValue).toEqual([1,2,3,4])
+		expect(child.aValue).toEqual([1,2,3,4])
 
+	})
+	it('can watch a property in the parent',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.aValue = [1,2,3]
+		child.counter = 0
 
+		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		},true)
 
+		child.$digest()
+		expect(child.counter).toBe(1)
+		parent.aValue.push(4)
+		child.$digest()
+		expect(child.counter).toBe(2)
+	})
+	it('can be nested at any depth',()=>{
+		let test = new Scope()
+		let test1 = test.$new()
+		let test2 = test1.$new()
+		let test22 = test1.$new()
+		let test11 = test.$new()
+		let test112 = test11.$new()
 
+		test.aValue = 'mushbroom'
+		expect(test1.aValue).toBe('mushbroom')
+		expect(test2.aValue).toBe('mushbroom')
+		expect(test22.aValue).toBe('mushbroom')
+		expect(test11.aValue).toBe('mushbroom')
+		expect(test112.aValue).toBe('mushbroom')
+		test11.anotherValue = 'woniu'
+		expect(test112.anotherValue).toBe('woniu')
+		expect(test1.anotherValue).toBeUndefined()
+		expect(test2.anotherValue).toBeUndefined()
 
+		// expect(test1.aValue).toBe('mushbroom')
+		// expect(test1.aValue).toBe('mushbroom')
+
+	})
+	it('shadows a parent property with the same name',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.name = 'woniu'
+		child.name = 'mushbroom'
+		expect(child.name).toBe('mushbroom')
+		expect(parent.name).toBe('woniu')
+	})
+	it('does not shadows a parent property with object',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.user = {'name':'woniu'}
+		child.user.name = 'mushbroom'
+		expect(child.user.name).toBe('mushbroom')
+		expect(parent.user.name).toBe('mushbroom')
+	})
+	it('does not digest its parent',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.aValue = 'woniu'
+		parent.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.aValueWas = newVal
+		})
+
+		child.$digest()
+		expect(child.aValueWas).toBeUndefined()
+	})
+	it('keeps a record of its children',()=>{
+		let parent = new Scope()
+		let child1 = parent.$new()
+		let child2 = parent.$new()
+		let child2_1 = child2.$new()
+
+		expect(parent.$$children.length).toBe(2)
+		expect(parent.$$children[0]).toBe(child1)
+		expect(parent.$$children[1]).toBe(child2)
+		expect(child1.$$children.length).toBe(0)
+		expect(child2.$$children.length).toBe(1)
+		expect(child2.$$children[0]).toBe(child2_1)
+
+	})
+	it('digests its children',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		parent.aValue = 'woniu'
+		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.aValueWas = newVal
+		})
+
+		parent.$digest()
+		expect(child.aValueWas).toBe('woniu')
+	})
+})
 
 
 
