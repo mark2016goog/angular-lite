@@ -212,6 +212,7 @@ class Scope {
       let newVal, oldVal
 
       _.forEachRight(scope.$$watchers, (watcher) => {
+        
         try {
           newVal = watcher.watchFn(scope)
           oldVal = watcher.last

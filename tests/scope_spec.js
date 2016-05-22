@@ -785,6 +785,7 @@ describe('inheritance',()=>{
 		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
 			scope.aValueWas = newVal
 		})
+		
 		parent.$digest()
 		expect(child.aValueWas).toBe('woniu')
 	})
