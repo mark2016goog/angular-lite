@@ -785,9 +785,51 @@ describe('inheritance',()=>{
 		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
 			scope.aValueWas = newVal
 		})
-		
+
 		parent.$digest()
 		expect(child.aValueWas).toBe('woniu')
+	})
+	it('digests from root on $apply',()=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		let child2 = child.$new()
+
+		parent.aValue = 'woniu'
+		parent.counter = 0
+		parent.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
+
+		child2.$apply(()=>{})
+		expect(parent.counter).toBe(1)
+	})
+	it('schedules a digest from root on $evalAsync',(done)=>{
+		let parent = new Scope()
+		let child = parent.$new()
+		let child2 = child.$new()
+		parent.aValue = 'woniu'
+		parent.counter = 0
+		parent.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.counter++
+		})
+
+		child2.$evalAsync(()=>{})
+		setTimeout(()=>{
+			expect(parent.counter).toBe(1)
+			done()
+		},50)
+
+	})
+	it('cannot watch parent attributes when isolated',()=>{
+		let parent = new Scope()
+		let child = parent.$new(true)
+		parent.aValue = 'woniu'
+		child.$watch(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			scope.aValueWas = newVal
+		})
+
+		child.$digest()
+		expect(child.aValueWas).toBeUndefined()
 	})
 })
 

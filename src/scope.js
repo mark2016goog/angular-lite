@@ -14,6 +14,7 @@ class Scope {
     // $postDigest队列
     this.$$postDigestQueue = []
     this.$$applyAsyncId = null
+    this.$root = this
     //记录子scope 方便递归digest $new中维护
     this.$$children = []
     // 记录状态是$digest，还是$apply
@@ -29,19 +30,25 @@ class Scope {
     }
     this.$$watchers.unshift(watcher)
     // 上次dirty出发的watchFn
-    this.$$lastDirtyWatch = null
+    this.$root.$$lastDirtyWatch = null
     // 返回函数，执行可以注销watch 直接执行splice
     return ()=>{
       let index = this.$$watchers.indexOf(watcher)
       if (index>=0) {
         this.$$watchers.splice(index,1)
-        this.$$lastDirtyWatch = null
+        this.$root.$$lastDirtyWatch = null
 
       };
     }
   }
-  $new(){
-    let childScope = Object.create(this)
+  $new(isolated){
+    let childScope
+    if (isolated) {
+      childScope = new Scope()
+    }else{
+      childScope = Object.create(this)
+
+    }
     // 保存在$$children中
     this.$$children.push(childScope)
     // 每个继承的scope有自己的wathcers
@@ -106,7 +113,7 @@ class Scope {
       //十次都不稳定，就报错
     let ttl = 10
       //记录上次dirty的watch
-    this.$$lastDirtyWatch = null
+    this.$root.$$lastDirtyWatch = null
       //用$$phase记录状态
     this.$begainPhase('$digest')
 
@@ -152,14 +159,14 @@ class Scope {
       return this.$eval(fn)
     } finally {
       this.$clearPhase()
-      this.$digest()
+      this.$root.$digest()
     }
   }
   $evalAsync(fn) {
     if (!this.$$phase && !this.$$asyncQueue.length) {
       setTimeout(() => {
         if (this.$$asyncQueue.length) {
-          this.$digest()
+          this.$root.$digest()
         };
       }, 0)
     }
@@ -212,16 +219,16 @@ class Scope {
       let newVal, oldVal
 
       _.forEachRight(scope.$$watchers, (watcher) => {
-        
+
         try {
           newVal = watcher.watchFn(scope)
           oldVal = watcher.last
           if (!scope.$$areEqual(newVal, oldVal, watcher.valueEq)) {
-            scope.$$lastDirtyWatch = watcher
+            scope.$root.$$lastDirtyWatch = watcher
             watcher.last = (watcher.valueEq ? _.cloneDeep(newVal) : newVal)
             watcher.listenerFn(newVal, (oldVal === initWatchFn ? newVal : oldVal), scope)
             dirty = true
-          } else if (scope.$$lastDirtyWatch === watcher) {
+          } else if (scope.$root.$$lastDirtyWatch === watcher) {
             continueLoop = false
             //lodash的foreach return false 就顺便中断了
             return false
