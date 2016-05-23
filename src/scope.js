@@ -365,8 +365,15 @@ class Scope {
     }
   }
   $emit(eventName){
+    let propagationStopped = false
     const otherArgument = Array.prototype.slice.call(arguments,1)
-    const event = {name:eventName,targetScope:this}
+    const event = {
+      name: eventName,
+      targetScope: this,
+      stopPropagation:()=>{
+        propagationStopped = true
+      }
+    }
     const listenerArgs = [event].concat(otherArgument)
 
     let scope = this
@@ -374,7 +381,7 @@ class Scope {
       event.currentScope = scope
       scope.$$fireEventOnScope(eventName,listenerArgs)
       scope = scope.$parent
-    }while(scope)
+    }while(scope&&!propagationStopped)
     event.currentScope = null
     return event
     // return 

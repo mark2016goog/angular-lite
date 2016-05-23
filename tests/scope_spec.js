@@ -1451,8 +1451,36 @@ describe('Scope', () => {
 		scope.$broadcast('someEvent')
 		expect(currentScopeOnScope).toBe(scope)
 		expect(currentScopeOnChild).toBe(child)
+
 	})
 
+	it('does not propagate to parents when stopped',()=>{
+		let scopelistener = event=>{
+			event.stopPropagation()
+		}
+		let parentlistener = jasmine.createSpy()
+		scope.$on('someEvent', scopelistener)
+		parent.$on('someEvent', parentlistener)
+
+		scope.$emit('someEvent')
+		expect(parentlistener).not.toHaveBeenCalled()
+
+	})
+
+
+
+	it('receive by listeners on current scope after being stopped',()=>{
+		let listener1 = event=>{
+			event.stopPropagation()
+		}
+		let listener2 = jasmine.createSpy()
+		scope.$on('someEvent', listener1)
+		scope.$on('someEvent', listener2)
+
+		scope.$emit('someEvent')
+		expect(listener2).toHaveBeenCalled()
+
+	})
 
 
 
