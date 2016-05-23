@@ -1,249 +1,235 @@
 'use strict'
 
-let initWatchFn =()=>{}
-// 防止object中有length属性
-let isArrayLike = obj=>{
+const _ = require('lodash')
+const initWatchFn = () => {}
+  //  防止object中有length属性
+const isArrayLike = obj => {
   if (_.isNull(obj) || _.isUndefined(obj)) {
-    return false;
+    return false
   }
-  var length = obj.length;
+  var length = obj.length
   return length === 0 ||
-    (_.isNumber(length) && length > 0 && (length - 1) in obj);
+    (_.isNumber(length) && length > 0 && (length - 1) in obj)
 }
 class Scope {
   constructor() {
-    // $watch队列
+    //  $watch队列
     this.$$watchers = []
     this.$$lastDirtyWatch = null
-      // $evalasync队列
+      //  $evalasync队列
     this.$$asyncQueue = []
-    // applyAsync队列
+      //  applyAsync队列
     this.$$applyAsyncQueue = []
-    // $postDigest队列
+      //  $postDigest队列
     this.$$postDigestQueue = []
     this.$$applyAsyncId = null
     this.$root = this
-    //记录子scope 方便递归digest $new中维护
+      // 记录子scope 方便递归digest $new中维护
     this.$$children = []
-    // 记录状态是$digest，还是$apply
+      //  记录状态是$digest，还是$apply
     this.$$phase = null
   }
-  // 监听
+  //  监听
   $watch(watchFn, listenerFn, valueEq) {
-    let watcher = {
+    const watcher = {
       watchFn: watchFn,
       listenerFn: listenerFn || function() {},
       last: initWatchFn,
-      valueEq: !!valueEq //是否递归比较
+      valueEq: !!valueEq // 是否递归比较
     }
     this.$$watchers.unshift(watcher)
-    // 上次dirty出发的watchFn
+      //  上次dirty出发的watchFn
     this.$root.$$lastDirtyWatch = null
-    // 返回函数，执行可以注销watch 直接执行splice
-    return ()=>{
-      let index = this.$$watchers.indexOf(watcher)
-      if (index>=0) {
-        this.$$watchers.splice(index,1)
+      //  返回函数，执行可以注销watch 直接执行splice
+    return () => {
+      const index = this.$$watchers.indexOf(watcher)
+      if (index >= 0) {
+        this.$$watchers.splice(index, 1)
         this.$root.$$lastDirtyWatch = null
-
-      };
+      }
     }
   }
-  //和$watch(true)类似，不过不全量检查
-  //arr = [{name:1}]
-  //arr.push shift arr[0] = 1都检查
-  //arr[0].name=2不检查 因为引用没变
-  $watchCollection(watchFn, listenerFn){
-    let newVal,oldVal
-    let veryOldVal,trackVeryOldValue = (listenerFn.length>1)
-    // 有不同的，就+1外部$watch就能检测到变化
+    // 和$watch(true)类似，不过不全量检查
+    // arr = [{name:1}]
+    // arr.push shift arr[0] = 1都检查
+    // arr[0].name=2不检查 因为引用没变
+  $watchCollection(watchFn, listenerFn) {
+    let newVal, oldVal
+    let veryOldVal
+    const trackVeryOldValue = (listenerFn.length > 1)
+      //  有不同的，就+1外部$watch就能检测到变化
     let changeCount = 0
     let firstRun = true
-    let internalWatchFn = scope=>{
+    const internalWatchFn = scope => {
       newVal = watchFn(scope)
-      // 也是操碎了心
+        //  也是操碎了心
       if (_.isObject(newVal)) {
         if (isArrayLike(newVal)) {
           if (!_.isArray(oldVal)) {
             changeCount++
             oldVal = []
           }
-          if(newVal.length!==oldVal.length){
+          if (newVal.length !== oldVal.length) {
             changeCount++
             oldVal.length = newVal.length
           }
-          _.forEach(newVal,(newItem,i)=>{
-            let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[i])
-            if (!bothNaN&&newItem!==oldVal[i]) {
+          _.forEach(newVal, (newItem, i) => {
+            const bothNaN = _.isNaN(newItem) && _.isNaN(oldVal[i])
+            if (!bothNaN && newItem !== oldVal[i]) {
               changeCount++
               oldVal[i] = newItem
-            };
+            }
           })
-        }else{
-          if (!_.isObject(oldVal)|| isArrayLike(oldVal)) {
+        } else {
+          if (!_.isObject(oldVal) || isArrayLike(oldVal)) {
             changeCount++
             oldVal = {}
           }
-          // 循环比较对象
-          _.forOwn(newVal,(newItem,key)=>{
-              let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[key])
-              if (!bothNaN&&oldVal[key]!==newItem) {
-                changeCount++
-                oldVal[key] = newItem
-              };
-
-
+          //  循环比较对象
+          _.forOwn(newVal, (newItem, key) => {
+            const bothNaN = _.isNaN(newItem) && _.isNaN(oldVal[key])
+            if (!bothNaN && oldVal[key] !== newItem) {
+              changeCount++
+              oldVal[key] = newItem
+            }
           })
 
-          //再比较一次，如果确保相等，被删除元素也能比较出来
-          _.forOwn(oldVal,(oldItem,key)=>{
-            let bothNaN = _.isNaN(oldItem)&&_.isNaN(newVal[key])
-            if (!bothNaN&&newVal[key]!==oldItem) {
+          // 再比较一次，如果确保相等，被删除元素也能比较出来
+          _.forOwn(oldVal, (oldItem, key) => {
+            const bothNaN = _.isNaN(oldItem) && _.isNaN(newVal[key])
+            if (!bothNaN && newVal[key] !== oldItem) {
               changeCount++
               newVal[key] = oldItem
-            };
+            }
           })
-
         }
-      }else{      
-        if(!this.$$areEqual(newVal,oldVal,false)){
+      } else {
+        if (!this.$$areEqual(newVal, oldVal, false)) {
           changeCount++
         }
         oldVal = newVal
-
       }
       return changeCount
     }
-    let internalListenerFn = ()=>{
+    const internalListenerFn = () => {
       if (firstRun) {
-        listenerFn(newVal,newVal,this)
+        listenerFn(newVal, newVal, this)
         firstRun = false
-      }else{
-        listenerFn(newVal,veryOldVal,this)
-
+      } else {
+        listenerFn(newVal, veryOldVal, this)
       }
       if (trackVeryOldValue) {
         veryOldVal = _.clone(newVal)
-      };
-
+      }
     }
-    return this.$watch(internalWatchFn,internalListenerFn)
+    return this.$watch(internalWatchFn, internalListenerFn)
   }
-  $new(isolated, parent){
-
+  $new(isolated, parent) {
     let childScope
-    parent = parent||this
+    parent = parent || this
     if (isolated) {
       childScope = new Scope()
       childScope.$root = parent.$root
       childScope.$$asyncQueue = parent.$$asyncQueue
       childScope.$$postDigestQueue = parent.$$postDigestQueue
       childScope.$$applyAsyncQueue = parent.$$applyAsyncQueue
-    }else{
+    } else {
       childScope = Object.create(this)
-
     }
-    // 保存在$$children中
+    //  保存在$$children中
     parent.$$children.push(childScope)
-    // 每个继承的scope有自己的wathcers
+      //  每个继承的scope有自己的wathcers
     childScope.$$watchers = []
     childScope.$$children = []
     childScope.$parent = parent
     return childScope
   }
-  // 监听多个
-  $watchGroup(watchFns, listenerFn){
-    let newVals = new Array(watchFns.length)
-    let oldVals = new Array(watchFns.length)
+    //  监听多个
+  $watchGroup(watchFns, listenerFn) {
+    const newVals = new Array(watchFns.length)
+    const oldVals = new Array(watchFns.length)
 
     let changeReactionScheduled = false
     let firstRun = true
 
-    if (watchFns.length===0) {
+    if (watchFns.length === 0) {
       let shouldCall = true
-      this.$evalAsync(()=>{
+      this.$evalAsync(() => {
         if (shouldCall) {
-          listenerFn(newVals,newVals,this)
+          listenerFn(newVals, newVals, this)
         }
       })
-      return ()=>{
-        shouldCall= false
+      return () => {
+        shouldCall = false
       }
-    };
+    }
 
-    let watchGroupListener = ()=>{
+    const watchGroupListener = () => {
       if (firstRun) {
         firstRun = false
-        listenerFn(newVals,newVals,this)
-
-      }else{
-        listenerFn(newVals,oldVals,this)
-
+        listenerFn(newVals, newVals, this)
+      } else {
+        listenerFn(newVals, oldVals, this)
       }
       changeReactionScheduled = false
     }
 
-    let destroyFns = _.map(watchFns,(watchFn,i)=>{
-      return this.$watch(watchFn,(newVal,oldVal)=>{
+    const destroyFns = _.map(watchFns, (watchFn, i) => {
+      return this.$watch(watchFn, (newVal, oldVal) => {
         newVals[i] = newVal
         oldVals[i] = oldVal
-        // evalAsync是最后才执行的
+          //  evalAsync是最后才执行的
         if (!changeReactionScheduled) {
-          changeReactionScheduled=true
+          changeReactionScheduled = true
           this.$evalAsync(watchGroupListener)
-          // listenerFn(newVals,oldVals,this)
-
-        };
+            //  listenerFn(newVals,oldVals,this)
+        }
       })
     })
 
-    return ()=>{
-      destroyFns.forEach((desFn,i)=>{
+    return () => {
+      destroyFns.forEach((desFn, i) => {
         desFn()
       })
     }
   }
   $digest() {
     let dirty
-      //十次都不稳定，就报错
+      // 十次都不稳定，就报错
     let ttl = 10
-      //记录上次dirty的watch
+      // 记录上次dirty的watch
     this.$root.$$lastDirtyWatch = null
-      //用$$phase记录状态
+      // 用$$phase记录状态
     this.$begainPhase('$digest')
-
     if (this.$root.$$applyAsyncId) {
       clearTimeout(this.$root.$$applyAsyncId)
       this.$$flushApplyAsync()
-    };
+    }
     do {
-      // evalasync队列取出执行
+      //  evalasync队列取出执行
       while (this.$$asyncQueue.length) {
-        let asyncTask = this.$$asyncQueue.shift()
-        try{
+        const asyncTask = this.$$asyncQueue.shift()
+        try {
           asyncTask.scope.$eval(asyncTask.expression)
-        }catch(e){
+        } catch (e) {
           console.log(e)
         }
-
       }
       dirty = this.$$digestOnce()
       if ((dirty || this.$$asyncQueue.length) && !(ttl--)) {
         throw '10 digest interations reached'
-      };
+      }
     } while (dirty || this.$$asyncQueue.length)
     this.$clearPhase()
 
-    // postdigest
+    //  postdigest
     while (this.$$postDigestQueue.length) {
-      try{
+      try {
         this.$$postDigestQueue.shift()()
-      }catch(e){
+      } catch (e) {
         console.error(e)
       }
-
     }
-
   }
   $eval(fn, arg) {
     return fn(this, arg)
@@ -262,7 +248,7 @@ class Scope {
       setTimeout(() => {
         if (this.$$asyncQueue.length) {
           this.$root.$digest()
-        };
+        }
       }, 0)
     }
     this.$$asyncQueue.push({
@@ -277,28 +263,26 @@ class Scope {
     if (this.$root.$$applyAsyncId === null) {
       this.$$applyAsyncId = setTimeout(() => {
         this.$apply(() => {
-            this.$$flushApplyAsync()
-          })
-          // this.$apply(_.bind(this.$$flushApplyAsync,this))
+          this.$$flushApplyAsync()
+        })
+          //  this.$apply(_.bind(this.$$flushApplyAsync,this))
       }, 0)
-    };
-
+    }
   }
-  $$everyScope(fn){
+  $$everyScope(fn) {
     if (fn(this)) {
-      return this.$$children.every(child=>{
+      return this.$$children.every(child => {
         return child.$$everyScope(fn)
       })
-    }else{
+    } else {
       return false
     }
   }
   $$flushApplyAsync() {
     while (this.$$applyAsyncQueue.length) {
-      try{
+      try {
         this.$$applyAsyncQueue.shift()()
-
-      }catch(e){
+      } catch (e) {
         console.log(e)
       }
     }
@@ -310,11 +294,9 @@ class Scope {
   $$digestOnce() {
     let dirty
     let continueLoop = true
-    this.$$everyScope(scope=>{
+    this.$$everyScope(scope => {
       let newVal, oldVal
-
       _.forEachRight(scope.$$watchers, (watcher) => {
-
         try {
           newVal = watcher.watchFn(scope)
           oldVal = watcher.last
@@ -325,26 +307,23 @@ class Scope {
             dirty = true
           } else if (scope.$root.$$lastDirtyWatch === watcher) {
             continueLoop = false
-            //lodash的foreach return false 就顺便中断了
+              // lodash的foreach return false 就顺便中断了
             return false
           }
-
-        }catch(e) {
+        } catch (e) {
           console.log(e)
         }
-
-      })      
+      })
       return continueLoop
     })
-
     return dirty
   }
   $$areEqual(newVal, oldVal, valueEq) {
     if (valueEq) {
       return _.isEqual(newVal, oldVal)
     } else {
-      //handle NaN
-      return newVal === oldVal || (newVal !== newVal && oldVal !== oldVal)
+      // handle NaN
+      return newVal === oldVal || (_.isNaN(newVal) && _.isNaN(oldVal))
     }
   }
   $begainPhase(phase) {
@@ -357,15 +336,15 @@ class Scope {
   $clearPhase() {
     this.$$phase = null
   }
-  $destroy(){
+  $destroy() {
     if (this.$parent) {
-      let siblings = this.$parent.$$children
-      let indexOfThis = siblings.indexOf(this)
-      if (indexOfThis>=0) {
-        siblings.splice(indexOfThis,1)
-      };
+      const siblings = this.$parent.$$children
+      const indexOfThis = siblings.indexOf(this)
+      if (indexOfThis >= 0) {
+        siblings.splice(indexOfThis, 1)
+      }
     }
     this.$$watchers = null
   }
 }
-module.exports = Scope;
+module.exports = Scope
