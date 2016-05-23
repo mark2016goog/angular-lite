@@ -366,26 +366,29 @@ class Scope {
   }
   $emit(eventName){
     const otherArgument = Array.prototype.slice.call(arguments,1)
-    const event = {name:eventName}
+    const event = {name:eventName,targetScope:this}
     const listenerArgs = [event].concat(otherArgument)
 
     let scope = this
     do{
+      event.currentScope = scope
       scope.$$fireEventOnScope(eventName,listenerArgs)
       scope = scope.$parent
     }while(scope)
-
+    event.currentScope = null
     return event
     // return 
   }
   $broadcast(eventName){
     const otherArgument = Array.prototype.slice.call(arguments,1)
-    const event = {name:eventName}
+    const event = {name:eventName,targetScope:this}
     const listenerArgs = [event].concat(otherArgument)
     this.$$everyScope(scope=>{
+      event.currentScope = scope
       scope.$$fireEventOnScope(eventName,listenerArgs)
       return true
     })
+    event.currentScope = null
     return event
   }
   $$fireEventOnScope(eventName,listenerArgs){

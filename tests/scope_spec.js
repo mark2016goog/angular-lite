@@ -1402,8 +1402,56 @@ describe('Scope', () => {
 		expect(isolatedChildListener).not.toHaveBeenCalled()
 	})
 
+	it('attaches targetScope on $emit',()=>{
+		let parentlistener = jasmine.createSpy()
+		let scopelistener = jasmine.createSpy()
+		scope.$on('someEvent', scopelistener)
+		parent.$on('someEvent', parentlistener)
 
+		scope.$emit('someEvent')
+		expect(scopelistener.calls.mostRecent().args[0].targetScope).toBe(scope)
+		expect(parentlistener.calls.mostRecent().args[0].targetScope).toBe(scope)
+	})
+	it('attaches targetScope on $broadcast',()=>{
+		let childlistener = jasmine.createSpy()
+		let scopelistener = jasmine.createSpy()
+		scope.$on('someEvent', scopelistener)
+		child.$on('someEvent', childlistener)
 
+		scope.$broadcast('someEvent')
+		expect(scopelistener.calls.mostRecent().args[0].targetScope).toBe(scope)
+		expect(childlistener.calls.mostRecent().args[0].targetScope).toBe(scope)
+	})
+	it('attaches currentScope on $emit',()=>{
+		let currentScopeOnScope,currentScopeOnParent
+		let parentlistener = event=>{
+			currentScopeOnParent = event.currentScope
+		}
+		let scopelistener = event=>{
+			currentScopeOnScope = event.currentScope
+		}
+		scope.$on('someEvent', scopelistener)
+		parent.$on('someEvent', parentlistener)
+
+		scope.$emit('someEvent')
+		expect(currentScopeOnScope).toBe(scope)
+		expect(currentScopeOnParent).toBe(parent)
+	})
+	it('attaches currentScope on $broadcast',()=>{
+		let currentScopeOnScope,currentScopeOnChild
+		let childlistener = event=>{
+			currentScopeOnChild = event.currentScope
+		}
+		let scopelistener = event=>{
+			currentScopeOnScope = event.currentScope
+		}
+		scope.$on('someEvent', scopelistener)
+		child.$on('someEvent', childlistener)
+
+		scope.$broadcast('someEvent')
+		expect(currentScopeOnScope).toBe(scope)
+		expect(currentScopeOnChild).toBe(child)
+	})
 
 
 
