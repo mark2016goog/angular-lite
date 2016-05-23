@@ -1482,16 +1482,7 @@ describe('Scope', () => {
 
 	})
 
-	_.forEach(['$emit','$broadcast'],method=>{
-		it('is sets defaultPrevented when preventefault called on '+methos,()=>{
-			let listener = event=>{
-				event.preventefault()
-			}
-			scope.$on('someEvent',listener)
-			let event = scope[method]('someEvent')
-			expect(event.defaultPrevented).toBe('true')
-		})
-	})
+
 
 
 
