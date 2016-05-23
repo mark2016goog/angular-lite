@@ -19,4 +19,9 @@
 ## 工程化
 * webpack
 
-envify:和ugify一起用，移除所有的调试代码和详细的错误信息,以此来提升效率并缩减文件
+* 打包现在用的webpack 后续用rollup吧 都说这个号
+* envify:和ugify一起用，移除所有的调试代码和详细的错误信息,以此来提升效率并缩减文件
+
+争取把上面出现的词，都搞透彻，也不枉我花时间造轮子了
+
+> 参考build your own angularjs

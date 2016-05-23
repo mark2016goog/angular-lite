@@ -41,28 +41,64 @@ class Scope {
       };
     }
   }
+  //和$watch(true)类似，不过不全量检查
+  //arr = [{name:1}]
+  //arr.push shift arr[0] = 1都检查
+  //arr[0].name=2不检查 因为引用没变
   $watchCollection(watchFn, listenerFn){
     let newVal,oldVal
+    // 有不同的，就+1外部$watch就能检测到变化
     let changeCount = 0
     let internalWatchFn = scope=>{
       newVal = watchFn(scope)
-
-
+      // 也是操碎了心
       if (_.isObject(newVal)) {
-        if (_.isArray(newVal)) {
+        if (_.isArrayLike(newVal)) {
           if (!_.isArray(oldVal)) {
             changeCount++
             oldVal = []
           }
+          if(newVal.length!==oldVal.length){
+            changeCount++
+            oldVal.length = newVal.length
+          }
+          _.forEach(newVal,(newItem,i)=>{
+            let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[i])
+            if (!bothNaN&&newItem!==oldVal[i]) {
+              changeCount++
+              oldVal[i] = newItem
+            };
+          })
         }else{
+          if (!_.isObject(oldVal)|| _.isArrayLike(oldVal)) {
+            changeCount++
+            oldVal = {}
+          }
+          // 循环比较对象
+          _.forOwn(newVal,(newItem,key)=>{
+            let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[key])
+            if (!bothNaN&&oldVal[key]!==newItem) {
+              changeCount++
+              oldVal[key] = newItem
+            };
+          })
+          //再比较一次，如果确保相等，被删除元素也能比较出来
+          _.forOwn(oldVal,(oldItem,key)=>{
+            let bothNaN = _.isNaN(oldItem)&&_.isNaN(newVal[key])
+            if (!bothNaN&&newVal[key]!==oldItem) {
+              changeCount++
+              newVal[key] = oldItem
+            };
+          })
 
         }
       }else{      
         if(!this.$$areEqual(newVal,oldVal,false)){
           changeCount++
         }
+        oldVal = newVal
+
       }
-      oldVal = newVal
       return changeCount
     }
     let internalListenerFn = ()=>{

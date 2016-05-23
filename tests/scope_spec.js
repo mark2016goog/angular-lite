@@ -978,6 +978,196 @@ describe('watchCollections',()=>{
 		scope.$digest()
 		expect(scope.counter).toBe(2)
 	})
+	it('notice when the value added to an array',()=>{
+		scope.counter = 0
+		scope.arr = [1,2,3]
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arr.push(4)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+	it('notice when the value removed to an array',()=>{
+		scope.counter = 0
+		scope.arr = [1,2,3]
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arr.shift(4)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+
+	it('notice when the value replaced to an array',()=>{
+		scope.counter = 0
+		scope.arr = [1,2,3]
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arr[0] = 4
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+	it('notice when the value recorded to an array',()=>{
+		scope.counter = 0
+		scope.arr = [2,1,3]
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arr.sort()
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+
+	it('does note fail on NaNs in arrays',()=>{
+		scope.arr = [1,NaN,3]
+		scope.counter = 0
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+	})
+	it('notice an item replaced in an arrayLike arguments Object',()=>{
+		(()=>{
+			scope.arrayLike = arguments
+		})(1,2,3)
+		scope.counter = 0
+
+		scope.$watchCollection(scope=>scope.arrayLike,(newVal)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arrayLike[0] = 42
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+
+	})
+	it('notice an item replaced in an arrayLike nodelist Object',()=>{
+		document.documentElement.appendChild(document.createElement('div'))
+		scope.arrayLike = document.getElementsByTagName('div')
+		scope.counter = 0
+
+		scope.$watchCollection(scope=>scope.arrayLike,(newVal)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		document.documentElement.appendChild(document.createElement('div'))
+		scope.$digest()
+
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+
+	})
+
+	it('notice when the value recorded to an object',()=>{
+		scope.counter = 0
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.obj = {'name':'woniu'}
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+
+	it('notice when a new attribute is added to an object',()=>{
+		scope.counter = 0
+		scope.obj = {name:'woniu'}
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.obj.girlfriend = 'mushbroom'
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+	it('notice when attribute changed in an object',()=>{
+		scope.counter = 0
+		scope.obj = {name:'woniu'}
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.obj.name = 'mushbroom'
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+	it('does not fail on NaN attributes in object',()=>{
+		scope.counter = 0
+		scope.obj = {name:NaN}
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+	})
+	it('notice when attribute removed in an object',()=>{
+		scope.counter = 0
+		scope.obj = {name:'woniu',girlfriend:"mushbroom"}
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		delete scope.obj.name
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+
 })
 
 
