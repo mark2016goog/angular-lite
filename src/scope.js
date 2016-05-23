@@ -1,7 +1,15 @@
 'use strict'
 
-function initWatchFn() {}
-
+let initWatchFn =()=>{}
+// 防止object中有length属性
+let isArrayLike = obj=>{
+  if (_.isNull(obj) || _.isUndefined(obj)) {
+    return false;
+  }
+  var length = obj.length;
+  return length === 0 ||
+    (_.isNumber(length) && length > 0 && (length - 1) in obj);
+}
 class Scope {
   constructor() {
     // $watch队列
@@ -47,13 +55,15 @@ class Scope {
   //arr[0].name=2不检查 因为引用没变
   $watchCollection(watchFn, listenerFn){
     let newVal,oldVal
+    let veryOldVal,trackVeryOldValue = (listenerFn.length>1)
     // 有不同的，就+1外部$watch就能检测到变化
     let changeCount = 0
+    let firstRun = true
     let internalWatchFn = scope=>{
       newVal = watchFn(scope)
       // 也是操碎了心
       if (_.isObject(newVal)) {
-        if (_.isArrayLike(newVal)) {
+        if (isArrayLike(newVal)) {
           if (!_.isArray(oldVal)) {
             changeCount++
             oldVal = []
@@ -70,18 +80,21 @@ class Scope {
             };
           })
         }else{
-          if (!_.isObject(oldVal)|| _.isArrayLike(oldVal)) {
+          if (!_.isObject(oldVal)|| isArrayLike(oldVal)) {
             changeCount++
             oldVal = {}
           }
           // 循环比较对象
           _.forOwn(newVal,(newItem,key)=>{
-            let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[key])
-            if (!bothNaN&&oldVal[key]!==newItem) {
-              changeCount++
-              oldVal[key] = newItem
-            };
+              let bothNaN = _.isNaN(newItem)&&_.isNaN(oldVal[key])
+              if (!bothNaN&&oldVal[key]!==newItem) {
+                changeCount++
+                oldVal[key] = newItem
+              };
+
+
           })
+
           //再比较一次，如果确保相等，被删除元素也能比较出来
           _.forOwn(oldVal,(oldItem,key)=>{
             let bothNaN = _.isNaN(oldItem)&&_.isNaN(newVal[key])
@@ -102,7 +115,17 @@ class Scope {
       return changeCount
     }
     let internalListenerFn = ()=>{
-      listenerFn(newVal,oldVal,this)
+      if (firstRun) {
+        listenerFn(newVal,newVal,this)
+        firstRun = false
+      }else{
+        listenerFn(newVal,veryOldVal,this)
+
+      }
+      if (trackVeryOldValue) {
+        veryOldVal = _.clone(newVal)
+      };
+
     }
     return this.$watch(internalWatchFn,internalListenerFn)
   }

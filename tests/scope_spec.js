@@ -943,7 +943,7 @@ describe('watchCollections',()=>{
 		scope = new Scope()
 	})
 
-	it('works like a normal for nom-collections',()=>{
+	it('works like a normal for non-collections',()=>{
 		let valueProvided
 		scope.aValue = 42
 		scope.counter = 0
@@ -1157,7 +1157,6 @@ describe('watchCollections',()=>{
 		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
 			scope.counter++
 		})
-
 		scope.$digest()
 		expect(scope.counter).toBe(1)
 
@@ -1166,6 +1165,72 @@ describe('watchCollections',()=>{
 		expect(scope.counter).toBe(2)
 		scope.$digest()
 		expect(scope.counter).toBe(2)
+	})
+	it('does not consider any object with a length property an array',()=>{
+		scope.counter = 0
+		scope.obj = {name:'woniu',length:1}
+		scope.$watchCollection(scope=>scope.obj,(newVal)=>{
+			scope.counter++
+		})
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.obj.girlfriend = 'mushbroom'
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+	it('gives the old non-collections values to listeners',()=>{
+		scope.aValue = 42
+		let oldValueGiven
+
+		scope.$watchCollection(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			oldValueGiven = oldVal
+		})
+		scope.$digest()
+		scope.aValue = 43
+		scope.$digest()
+
+		expect(oldValueGiven).toBe(42)
+	})
+
+	it('gives the old array values to listeners',()=>{
+		scope.aValue = [1,2,3]
+		let oldValueGiven
+
+		scope.$watchCollection(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			oldValueGiven = oldVal
+		})
+		scope.$digest()
+		scope.aValue.push(4)
+		scope.$digest()
+
+		expect(oldValueGiven).toEqual([1,2,3])
+	})
+	it('gives the old object values to listeners',()=>{
+		scope.aValue = {a:1,b:2}
+		let oldValueGiven
+
+		scope.$watchCollection(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			oldValueGiven = oldVal
+		})
+		scope.$digest()
+		scope.aValue.c = 43
+		scope.$digest()
+
+		expect(oldValueGiven).toEqual({a:1,b:2})
+	})
+	it('use the new value as the old val in the first run',()=>{
+		scope.aValue = {a:1,b:2}
+		let oldValueGiven
+
+		scope.$watchCollection(scope=>scope.aValue,(newVal,oldVal,scope)=>{
+			oldValueGiven = oldVal
+		})
+		scope.$digest()
+
+		expect(oldValueGiven).toEqual({a:1,b:2})
 	})
 
 })
