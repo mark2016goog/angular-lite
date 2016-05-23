@@ -1467,11 +1467,13 @@ describe('Scope', () => {
 
 	})
 
+
+
 	it('receive by listeners on current scope after being stopped',()=>{
 		let listener1 = event=>{
 			event.stopPropagation()
 		}
-		let 5tlistener2 = jasmine.createSpy()
+		let listener2 = jasmine.createSpy()
 		scope.$on('someEvent', listener1)
 		scope.$on('someEvent', listener2)
 
