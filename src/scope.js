@@ -26,6 +26,8 @@ class Scope {
     this.$root = this
       // 记录子scope 方便递归digest $new中维护
     this.$$children = []
+    // 事件
+    this.$$listeners = {}
       //  记录状态是$digest，还是$apply
     this.$$phase = null
   }
@@ -141,6 +143,7 @@ class Scope {
       //  每个继承的scope有自己的wathcers
     childScope.$$watchers = []
     childScope.$$children = []
+    childScope.$$listeners = {}
     childScope.$parent = parent
     return childScope
   }
@@ -346,5 +349,69 @@ class Scope {
     }
     this.$$watchers = null
   }
+  $on(eventName,listener){
+    let listeners = this.$$listeners[eventName]
+    if (!listeners) {
+      this.$$listeners[eventName] = listeners = []
+    }
+    listeners.push(listener)
+    // deregister
+    return ()=>{
+      const index = listeners.indexOf(listener)
+      if (index>=0) {
+        //不用splice 防止循环的时候跳过一个，副作用 触发的时候再splice
+        listeners[index] = null
+      };
+    }
+  }
+  $emit(eventName){
+    const otherArgument = Array.prototype.slice.call(arguments,1)
+    const event = {name:eventName}
+    const listenerArgs = [event].concat(otherArgument)
+
+    let scope = this
+    do{
+      scope.$$fireEventOnScope(eventName,listenerArgs)
+      scope = scope.$parent
+    }while(scope)
+
+    return event
+    // return 
+  }
+  $broadcast(eventName){
+    const otherArgument = Array.prototype.slice.call(arguments,1)
+    const event = {name:eventName}
+    const listenerArgs = [event].concat(otherArgument)
+    this.$$everyScope(scope=>{
+      scope.$$fireEventOnScope(eventName,listenerArgs)
+      return true
+    })
+    return event
+  }
+  $$fireEventOnScope(eventName,listenerArgs){
+    const listeners = this.$$listeners[eventName]||[]
+    let i = 0
+    // 不用forEach 方便删除
+    while(i<listeners.length){
+      if (listeners[i]===null) {
+        listeners.splice(i,1)
+      }else{
+        listeners[i].apply(null, listenerArgs)
+        i++
+      }
+    }
+
+    // _.forEach(listeners,(listener)=>{
+
+    // })
+    return event
+  }
 }
 module.exports = Scope
+
+
+
+
+
+
+
