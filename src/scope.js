@@ -41,6 +41,35 @@ class Scope {
       };
     }
   }
+  $watchCollection(watchFn, listenerFn){
+    let newVal,oldVal
+    let changeCount = 0
+    let internalWatchFn = scope=>{
+      newVal = watchFn(scope)
+
+
+      if (_.isObject(newVal)) {
+        if (_.isArray(newVal)) {
+          if (!_.isArray(oldVal)) {
+            changeCount++
+            oldVal = []
+          }
+        }else{
+
+        }
+      }else{      
+        if(!this.$$areEqual(newVal,oldVal,false)){
+          changeCount++
+        }
+      }
+      oldVal = newVal
+      return changeCount
+    }
+    let internalListenerFn = ()=>{
+      listenerFn(newVal,oldVal,this)
+    }
+    return this.$watch(internalWatchFn,internalListenerFn)
+  }
   $new(isolated, parent){
 
     let childScope

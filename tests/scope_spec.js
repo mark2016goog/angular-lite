@@ -934,6 +934,50 @@ describe('inheritance',()=>{
 		expect(child.counter).toBe(2)
 
 	})
+
+
+})
+describe('watchCollections',()=>{
+	let scope
+	beforeEach(() => {
+		scope = new Scope()
+	})
+
+	it('works like a normal for nom-collections',()=>{
+		let valueProvided
+		scope.aValue = 42
+		scope.counter = 0
+		scope.$watchCollection(scope=>scope.aValue,(newVal)=>{
+			valueProvided = newVal
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+		expect(valueProvided).toBe(scope.aValue)
+
+		scope.aValue = 43
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
+
+	it('notice when the value becomes an array',()=>{
+		scope.counter = 0
+		scope.$watchCollection(scope=>scope.arr,(newVal)=>{
+			scope.counter++
+		})
+
+		scope.$digest()
+		expect(scope.counter).toBe(1)
+
+		scope.arr = [1,2,3]
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+		scope.$digest()
+		expect(scope.counter).toBe(2)
+	})
 })
 
 
