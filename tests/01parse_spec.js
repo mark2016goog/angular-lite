@@ -52,9 +52,78 @@ describe('Parse', () => {
     expect(fn()).toBe('abc')
   })
   it('can parse a string in double quotes',()=>{
-    let fn = parse('"abc"')
-    expect(fn()).toBe('abc')
+    let fn = parse('"a-bc"')
+    expect(fn()).toBe('a-bc')
   })
+  it('not parsea string ends with mismatching quotes',()=>{
+    expect(()=>{ parse('"abc\'') }).toThrow()
+    // expect(fn()).toBe('abc')
+  })
+  it('can parse a string with single quotes inside',()=>{
+    let fn = parse("'a\\\'b'")
+    expect(fn()).toEqual('a\'b')
+  })
+  it('can parse a string with double quotes inside',()=>{
+    let fn = parse('"a\\\"b"')
+    expect(fn()).toEqual('a\"b')
+  })
+  it('will not parse a string with invalid unicode escapes',()=>{
+    expect(()=>{parse('"\\u00T0"')}).toThrow()
+  })
+
+  it('will parse null',()=>{
+    let fn = parse("null")
+    expect(fn()).toBe(null)
+  })
+  it('will parse true',()=>{
+    let fn = parse("true")
+    expect(fn()).toBe(true)
+  })
+  it('will parse false',()=>{
+    let fn = parse("false")
+    expect(fn()).toBe(false)
+  })
+  it('ignore white space',()=>{
+    let fn = parse(' \n 42 ')
+    expect(fn()).toBe(42)
+  })
+  it('will parse an empty array',()=>{
+    let fn = parse('[]')
+    expect(fn()).toEqual([])
+  })
+  it('will parse an non-empty array',()=>{
+    let fn = parse('[1, "two", [3,4], true]')
+    expect(fn()).toEqual([1, "two", [3,4], true])
+  })
+
+
+  it('will parse an empty object',()=>{
+    let fn = parse('{}')
+    expect(fn()).toEqual({})
+  })
+  it('will parse an non-empty object',()=>{
+    let fn = parse('{"name":"woniu",\'girlfriend\':"mushbroom"}')
+    expect(fn()).toEqual({"name":"woniu",'girlfriend':"mushbroom"})
+  })
+
+  it('will parse an object with identifier keys',()=>{
+    let fn = parse('{"a":1,"b":"2","c":[2,3],"d":{"e":4}}')
+    expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
+  })
+  it('will parse an object with identifier keys',()=>{
+    let fn = parse('{a:1,b:"2",c:[2,3],d:{e:4}}')
+    expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
+  })
+
+
+
+
+
+
+
+
+
+
 
 
 
