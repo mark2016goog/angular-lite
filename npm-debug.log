@@ -1,13 +1,13 @@
 0 info it worked if it ends with ok
-1 verbose cli [ 'node', '/usr/local/bin/npm', 'run', 'lint' ]
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'run', 'test_watch' ]
 2 info using npm@2.5.1
 3 info using node@v0.12.1
-4 verbose run-script [ 'prelint', 'lint', 'postlint' ]
-5 info prelint myangular@0.0.1
-6 info lint myangular@0.0.1
+4 verbose run-script [ 'pretest_watch', 'test_watch', 'posttest_watch' ]
+5 info pretest_watch myangular@0.0.1
+6 info test_watch myangular@0.0.1
 7 verbose unsafe-perm in lifecycle true
-8 info myangular@0.0.1 Failed to exec lint script
-9 verbose stack Error: myangular@0.0.1 lint: `eslint src/**`
+8 info myangular@0.0.1 Failed to exec test_watch script
+9 verbose stack Error: myangular@0.0.1 test_watch: `./node_modules/karma/bin/karma start --auto-watch --no-single-run karma.config.js`
 9 verbose stack Exit status 1
 9 verbose stack     at EventEmitter.<anonymous> (/usr/local/lib/node_modules/npm/lib/utils/lifecycle.js:213:16)
 9 verbose stack     at EventEmitter.emit (events.js:110:17)
@@ -18,17 +18,17 @@
 10 verbose pkgid myangular@0.0.1
 11 verbose cwd /Volumes/woniuppp/myAngular
 12 error Darwin 15.0.0
-13 error argv "node" "/usr/local/bin/npm" "run" "lint"
+13 error argv "node" "/usr/local/bin/npm" "run" "test_watch"
 14 error node v0.12.1
 15 error npm  v2.5.1
 16 error code ELIFECYCLE
-17 error myangular@0.0.1 lint: `eslint src/**`
+17 error myangular@0.0.1 test_watch: `./node_modules/karma/bin/karma start --auto-watch --no-single-run karma.config.js`
 17 error Exit status 1
-18 error Failed at the myangular@0.0.1 lint script 'eslint src/**'.
+18 error Failed at the myangular@0.0.1 test_watch script './node_modules/karma/bin/karma start --auto-watch --no-single-run karma.config.js'.
 18 error This is most likely a problem with the myangular package,
 18 error not with npm itself.
 18 error Tell the author that this fails on your system:
-18 error     eslint src/**
+18 error     ./node_modules/karma/bin/karma start --auto-watch --no-single-run karma.config.js
 18 error You can get their info via:
 18 error     npm owner ls myangular
 18 error There is likely additional logging output above.

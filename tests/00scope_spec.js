@@ -1,8 +1,6 @@
 let Scope = require('../src/scope')
 let _ = require('lodash')
-describe('Scope', () => {
-
-
+xdescribe('Scope', () => {
 	describe('digest', () => {
 
 		let scope
