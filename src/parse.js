@@ -22,7 +22,10 @@ class Lexer{
 			if (this.isNumber(this.ch)||(this.ch==='.'&&this.isNumber(this.peek()))) {
 				this.readNumber()
 				// console.log(this.tokens)
-			}else{
+			}else if(this.ch==="'"||this.ch==='"'){
+        this.readString()
+      }
+      else{
 				throw 'unexpect next character '+ this.ch
 			}
 		}
@@ -32,15 +35,31 @@ class Lexer{
 	isNumber(ch){
 		return ch>='0'&&ch<='9'
 	}
+  isExpOperator(ch){
+    return ch==='+'||ch==='-'||this.isNumber(ch)
+  }
   // 挨个读取数字和小数点
 	readNumber(){
 		let number = ''
 		while(this.index<this.text.length){
-			let ch = this.text.charAt(this.index)
+
+			let ch = this.text.charAt(this.index).toLowerCase()
 			if (ch=='.'||this.isNumber(ch)) {
 				number += ch
 			}else{
-				break
+				// break
+        let nextCh = this.peek()
+        let prevCh = number.charAt(number.length-1)
+        // console.log(prevCh,ch,nextCh)
+        if(ch==='e'&&this.isExpOperator(nextCh)){
+          number += ch
+        }else if(this.isExpOperator(ch)&&prevCh==='e'&&nextCh&&this.isNumber(nextCh)){
+          number += ch
+        }else if(this.isExpOperator(ch)&&prevCh==='e'&&(!nextCh||!this.isNumber(nextCh))){
+          throw 'invalid exponent'
+        }else{
+          break
+        }
 			}
 			this.index++
 		}
@@ -49,6 +68,26 @@ class Lexer{
 			value:Number(number)
 		})
 	}
+  // 读字符串
+  readString(){
+    this.index++
+    let string = ''
+    while(this.index<this.text.length){
+      let ch = this.text.charAt(this.index)
+      if (ch==="'"||ch==='"') {
+        this.index++
+        this.tokens.push({
+          text:string,
+          value:string
+        })
+        return 
+      }else{  
+        string+=ch
+      }
+      this.index++
+    }
+    throw 'unmathed quote'
+  }
   // 获取下一个位置字符，判断.42这种，小数点后面是不是数字，是数字要补0
   peek(){
     return this.index<this.text.length-1?this.text.charAt(this.index+1):false
@@ -90,7 +129,14 @@ class ASTCompiler{
         this.state.body.push('return ',this.recurse(ast.body),';')
         break
       case AST.Literal:
-        return ast.value
+        return this.escape(ast.value)
+    }
+  }
+  escape(value){
+    if (_.isString(value)) {
+      return "'"+value+"'"
+    }else{
+      return value
     }
   }
 }
