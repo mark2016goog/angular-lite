@@ -1483,16 +1483,37 @@ describe('Scope', () => {
 	})
 
 	_.forEach(['$emit','$broadcast'],method=>{
-		it('is sets defaultPrevented when preventefault called on '+methos,()=>{
+		it('is sets defaultPrevented when preventDefault called on '+method,()=>{
 			let listener = event=>{
-				event.preventefault()
+				event.preventDefault()
 			}
 			scope.$on('someEvent',listener)
 			let event = scope[method]('someEvent')
-			expect(event.defaultPrevented).toBe('true')
+			expect(event.defaultPrevented).toBe(true)
 		})
 	})
 
+	it('filres $destroy when destroyed',()=>{
+		let listener = jasmine.createSpy()
+		scope.$on('$destroy',listener)
+		scope.$destroy()
+
+		expect(listener).toHaveBeenCalled()
+	})
+	it('filres $destroy when children destroyed',()=>{
+		let listener = jasmine.createSpy()
+		child.$on('$destroy',listener)
+		scope.$destroy()
+
+		expect(listener).toHaveBeenCalled()
+	})
+	it('nolonger calls listeners after destroyed',()=>{
+		let listener = jasmine.createSpy()
+		scope.$on('myEvent',listener)
+		scope.$destroy()
+		scope.$emit('myEvent')
+		expect(listener).not.toHaveBeenCalled()
+	})
 
 
 

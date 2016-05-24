@@ -340,6 +340,7 @@ class Scope {
     this.$$phase = null
   }
   $destroy() {
+    this.$broadcast('$destroy')
     if (this.$parent) {
       const siblings = this.$parent.$$children
       const indexOfThis = siblings.indexOf(this)
@@ -348,6 +349,7 @@ class Scope {
       }
     }
     this.$$watchers = null
+    this.$$listeners = {}
   }
   $on(eventName,listener){
     let listeners = this.$$listeners[eventName]
@@ -372,6 +374,9 @@ class Scope {
       targetScope: this,
       stopPropagation:()=>{
         propagationStopped = true
+      },
+      preventDefault:()=>{
+        event.defaultPrevented = true
       }
     }
     const listenerArgs = [event].concat(otherArgument)
@@ -388,7 +393,14 @@ class Scope {
   }
   $broadcast(eventName){
     const otherArgument = Array.prototype.slice.call(arguments,1)
-    const event = {name:eventName,targetScope:this}
+    const event = {
+      name: eventName,
+      targetScope: this,
+      preventDefault:()=>{
+        event.defaultPrevented = true
+      }
+
+    }
     const listenerArgs = [event].concat(otherArgument)
     this.$$everyScope(scope=>{
       event.currentScope = scope
