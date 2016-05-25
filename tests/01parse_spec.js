@@ -151,7 +151,7 @@ describe('prase with attribute and function calls',()=>{
 
   it('will look up a 4-part identifier path from an object',()=>{
     let fn = parse('aKey.bKey.cKey.dKey')
-    console.log(fn.toString())
+    // console.log(fn.toString())
     expect(fn({aKey:{bKey:{cKey:{dKey:'woniu'}}}})).toBe('woniu')
     expect(fn({aKey:{bKey:{cKey:{}}}})).toBeUndefined()
     expect(fn({aKey:{bKey:{}}})).toBeUndefined()
@@ -160,13 +160,43 @@ describe('prase with attribute and function calls',()=>{
     expect(fn({})).toBeUndefined()
   })
 
-
+  it('uses local instead of scope when there is a match key',()=>{
+    let fn = parse('aKey')
+    let scope = {aKey:'woniu'}
+    let locals = {aKey:'mushbroom'}
+    expect(fn(scope,locals)).toBe('mushbroom')
+  })
+  it('does not use local instead of scope when no match key',()=>{
+    let fn = parse('aKey')
+    let scope = {aKey:'woniu'}
+    let locals = {bKey:'mushbroom'}
+    expect(fn(scope,locals)).toBe('woniu')
+  })
+  it('use locals instead of scope when the first part matches',()=>{
+    let fn = parse('aKey.bKey')
+    let scope = {aKey:{bKey:'woniu'}}
+    let locals = {aKey:{}}
+    expect(fn(scope,locals)).toBeUndefined()
+  })
+  it('parses a simple computed property access',()=>{
+    let fn = parse('aKey["bKey"]')
+    expect(fn({aKey:{bKey:'woniu'}})).toBe('woniu')
+  })
+  it('parse a array',()=>{
+    let fn = parse('arr[1]')
+    expect(fn({arr:[1,2,3]})).toBe(2)
+  })
+  it('parse a compute with another key as property',()=>{
+    let fn = parse('aKey[anotherKey]')
+    expect(fn({anotherKey:'bKey',aKey:{bKey:'woniu'}})).toBe('woniu')
+  })
+  it('parse a compute with another key as property',()=>{
+    let fn = parse('aKey[anotherKey["cKey"]]')
+    expect(fn({anotherKey:{cKey:'mushbroom'},aKey:{'mushbroom':'woniu'}})).toBe('woniu')
+  })
+  // it('pars')
 })
-
-
-
-
-          // console.log(fn.toString())
+  // console.log(fn.toString())
 
 
 

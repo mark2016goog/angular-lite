@@ -175,6 +175,8 @@ class AST{
 	}
 	ast(text){
 		this.tokens = this.lexer.lex(text)
+    // console.log(JSON.stringify(this.tokens,null,2))
+
     return this.program()
 	}
   program(){
@@ -195,12 +197,25 @@ class AST{
     }else{
       primary = this.constant()
     }
-    while(this.expect('.')){
-      // console.log(a)
-      primary = {
-        type:AST.MemberExpression,
-        object:primary,
-        property:this.identifier()
+    let next
+    while(next=this.expect('.','[')){
+      if (next.text=='[') {
+        primary = {
+          type:AST.MemberExpression,
+          object:primary,
+          property:this.primary(),
+          computed:true
+        }
+        this.consume(']')
+      }else{
+        primary = {
+          type:AST.MemberExpression,
+          object:primary,
+          property:this.identifier(),
+          computed:false
+
+        }
+
       }
     }
     return primary
@@ -241,18 +256,18 @@ class AST{
     }
     return token
   }
-  expect(e){
+  expect(e1,e2,e3,e4){
     // 
-    let token = this.peek(e)
+    let token = this.peek(e1,e2,e3,e4)
     if (token) {
       return this.tokens.shift()
     };
   }
-  peek(e){
+  peek(e1,e2,e3,e4){
     // tokens第一个的text是e或者e不存在，就返回token第一个
     if (this.tokens.length>0) {
       let text = this.tokens[0].text
-      if (text===e||!e) {
+      if (text===e1||text===e2||text===e3||text===e4||(!e1&&!e2&&!e3&&!e4)) {
         return this.tokens[0]
       };
     };
@@ -280,12 +295,14 @@ class ASTCompiler{
 		this.astBuilder = astBuilder
     // 怎么给class的原型属性赋值 先写这里吧 
     this.stringEscapeRegx = /[^ a-zA-Z0-9]/g
-    // 返回函数字符串的参数
-    this.arguName = 'obj'
+    // 返回函数字符串的参数 第一个参数scope fn(s,l){var v0,v1xxxxx}
+    this.arguScope = 's'
+    // 第二个参数 Locals
+    this.arguLocals = 'l'
 	}
 	compile(text){
 		let ast = this.astBuilder.ast(text)
-    console.log(JSON.stringify(ast,null,2))
+    // console.log(JSON.stringify(ast,null,2))
     // vars需要用到的变量v0v1方便函数一开始就var定义好
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
     this.state = {body:[],nextId:0,vars:['_test_var']}
@@ -293,7 +310,7 @@ class ASTCompiler{
     // console.log(this.state.body)
     // console.log(new Function('obj',this.state.body.join('')).toString())
     // console.log(this.state.body.join(''))
-    return new Function(this.arguName ,'var '+this.state.vars.join(',')+';'+this.state.body.join(''))
+    return new Function(this.arguScope,this.arguLocals ,'var '+this.state.vars.join(',')+';'+this.state.body.join(''))
 	}
   recurse(ast){
     let varid
@@ -322,22 +339,49 @@ class ASTCompiler{
         },this)
         return '{'+properties.join(',')+'}'
       case AST.Identifier:
+
+      // 这么拼字符串
+        // function anonymous(s, l) {
+        //   var _test_var, v0;
+        //   if (l && ('aKey' in l)) {
+        //     v0 = (l).aKey;
+        //   }
+        //   if (!(l && ('aKey' in l)) && s) {
+        //     v0 = (s).aKey;
+        //   }
+        //   return v0;
+        // }
         varid = this.nextId()
-        this._if(this.arguName ,this.assign(varid,this.nonComputedMember(this.arguName ,ast.name)))
+        this._if(this.getHasOwnProperty(this.arguLocals,ast.name),
+              this.assign(varid,this.nonComputedMember(this.arguLocals ,ast.name)))
+        this._if(this.not(this.getHasOwnProperty(this.arguLocals,ast.name))+'&&'+this.arguScope,
+              this.assign(varid,this.nonComputedMember(this.arguScope ,ast.name)))
         // console.log(this.nonComputedMember('obj',ast.name))
         return varid
       case AST.ThisExpression:
         // 如果是this 直接返回函数传递的参数
-        return this.arguName 
+        return this.arguScope 
       case AST.MemberExpression:
+
         varid = this.nextId()
         let left = this.recurse(ast.object)
-        this._if(left, this.assign(varid,this.nonComputedMember(left ,ast.property.name)))
+
+        if (ast.computed) {
+          let right = this.recurse(ast.property)
+          // console.log(this.ComputedMember(left ,right))
+          this._if(left, this.assign(varid,this.ComputedMember(left ,right)))
+        }else{
+          this._if(left, this.assign(varid,this.nonComputedMember(left ,ast.property.name)))
+        }
+        // console.log(this.state.body)
         return varid
     }
   }
   nonComputedMember(left,right){
     return '('+left+').'+right
+  }
+  ComputedMember(left,right){
+    return '('+left+')['+right+']'
   }
   assign(id,value){
     return id+'='+value+';'
@@ -358,6 +402,12 @@ class ASTCompiler{
   }
   _if(test,consequent){
     this.state.body.push('if('+test+'){'+consequent+'}')
+  }
+  not(e){
+    return '!('+e+')'
+  }
+  getHasOwnProperty(object,property){
+    return object+'&&('+this.escape(property)+' in '+object+')'
   }
   stringEscapeFn(c){
     // 16进制 比如 '变成\u0027 转译字符'a'b'就不会出错，变成'a\u0027b'
