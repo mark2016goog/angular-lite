@@ -194,10 +194,14 @@ describe('prase with attribute and function calls',()=>{
     let fn = parse('aKey[anotherKey["cKey"]]')
     expect(fn({anotherKey:{cKey:'mushbroom'},aKey:{'mushbroom':'woniu'}})).toBe('woniu')
   })
-  // it('pars')
-})
+  it('parses a function call',()=>{
+    let fn = parse('aFunction()')
   // console.log(fn.toString())
 
+    expect(fn({aFunction:()=> 'woniu'})).toBe('woniu')
+  })
+  // it('pars')
+})
 
 
 
@@ -205,11 +209,7 @@ describe('prase with attribute and function calls',()=>{
 
 
 
-
-
-
-
-
+  // console.log(fn.toString())
 
 
 

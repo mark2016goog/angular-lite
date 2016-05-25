@@ -41,7 +41,8 @@ class Lexer{
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
         this.index++
-      }else if(this.is('[]{}:,.')){
+      }else if(this.is('[]{}:,.()')){
+        // 这些符号都专门切开，数组 对象 函数
         this.tokens.push({
           text:this.ch
         })
@@ -198,8 +199,9 @@ class AST{
       primary = this.constant()
     }
     let next
-    while(next=this.expect('.','[')){
-      if (next.text=='[') {
+    while(next=this.expect('.','[','(')){
+      if (next.text==='[') {
+        // a[b]
         primary = {
           type:AST.MemberExpression,
           object:primary,
@@ -207,7 +209,8 @@ class AST{
           computed:true
         }
         this.consume(']')
-      }else{
+      }else if(next.text==='.'){
+        // a.b
         primary = {
           type:AST.MemberExpression,
           object:primary,
@@ -215,7 +218,10 @@ class AST{
           computed:false
 
         }
-
+      }else if(next.text==='('){
+        // 函数
+        primary = {type:AST.CallExpression,callee:primary}
+        this.consume(')')
       }
     }
     return primary
@@ -289,6 +295,7 @@ AST.Property ='Property'
 AST.Identifier = 'Identifier'
 AST.ThisExpression = 'ThisExpression'
 AST.MemberExpression = 'MemberExpression'
+AST.CallExpression = 'CallExpression'
 // 抽象树遍历 = 最后一步 scope.a+scope.b
 class ASTCompiler{
 	constructor(astBuilder){
@@ -375,6 +382,10 @@ class ASTCompiler{
         }
         // console.log(this.state.body)
         return varid
+      case AST.CallExpression:
+        // 函数
+        let callee = this.recurse(ast.callee)
+        return callee+'&&'+callee+'()'
     }
   }
   nonComputedMember(left,right){
