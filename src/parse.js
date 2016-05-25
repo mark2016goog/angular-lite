@@ -35,7 +35,8 @@ class Lexer{
         // 字符串
         this.readString(this.ch)
       }else if(this.isIdent(this.ch)){
-        // 不是引号开头，是字母，或者_或者$,可能是变量，或者是true false null，也有可能是object的key没有引号要加上引号处理
+        // 不是引号开头，是字母，或者_或者$,可能是变量，或者是true false null
+        // 也有可能是object的key没有引号要加上引号处理
         this.readIdent()
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
@@ -60,7 +61,7 @@ class Lexer{
     return ch==='+'||ch==='-'||this.isNumber(ch)
   }
   isIdent(ch){
-    return (ch>='a'&&ch<='z')||(ch>='A'&&ch<='A')||ch==='_'||ch=='$'
+    return (ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||ch==='_'||ch=='$'
   }
   isWhiteSpace(ch){
     return ch===' '||ch==='\r'||ch==='\t'||ch==='\n'||ch==='\v'||ch==='\u00A0'
@@ -186,6 +187,9 @@ class AST{
       return this.object()
     }else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
       return this.constants[this.consume().text]
+    }else if(this.peek().identifier){
+      // console.log(123)
+      return this.identifier()
     }else{
       return this.constant()
     }
@@ -248,6 +252,8 @@ class AST{
   identifier(){
     return {type:AST.Identifier,name:this.consume().text}
   }
+  // test存在才操作
+
 }
 AST.Program ='Program'
 AST.Literal ='Literal'
@@ -269,7 +275,7 @@ class ASTCompiler{
     this.state = {body:[]}
     this.recurse(ast)
     // console.log(this.state.body)
-    return new Function(this.state.body.join(''))
+    return new Function('obj',this.state.body.join(''))
 	}
   recurse(ast){
     switch(ast.type){
@@ -294,7 +300,18 @@ class ASTCompiler{
           return key+':'+value
         },this)
         return '{'+properties.join(',')+'}'
+      case AST.Identifier:
+        this.state.body.push('var _v0;')
+        this._if('obj',this.assign('_v0',this.nonComputedMember('obj',ast.name)))
+        // console.log(this.nonComputedMember('obj',ast.name))
+        return '_v0'
     }
+  }
+  nonComputedMember(left,right){
+    return '('+left+').'+right
+  }
+  assign(id,value){
+    return id+'='+value+';'
   }
   escape(value){
     if (_.isString(value)) {
@@ -305,7 +322,9 @@ class ASTCompiler{
       return value
     }
   }
-
+  _if(test,consequent){
+    this.state.body.push('if('+test+'){'+consequent+'}')
+  }
   stringEscapeFn(c){
     // 16进制 比如 '变成\u0027 转译字符'a'b'就不会出错，变成'a\u0027b'
     // console.log(c,'\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4))

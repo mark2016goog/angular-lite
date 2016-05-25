@@ -1,6 +1,8 @@
 let parse = require('../src/parse')
 let _ = require('lodash')
 describe('Parse', () => {
+describe('simple parse ',()=>{
+
   it('can parse an integer',()=>{
     let fn = parse('42')
     expect(fn).toBeDefined()
@@ -115,7 +117,19 @@ describe('Parse', () => {
     expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
   })
 
-
+})
+describe('prase with attribute and function calls',()=>{
+  it('looks up an attribute from the scope',()=>{
+    let fn = parse('aKey')
+    expect(fn({aKey:42})).toBe(42)
+    expect(fn({})).toBeUndefined()
+  })
+  it('returns undefined when looking up attributes from undefined',()=>{
+    let fn = parse('aKey')
+    console.log(fn.toString())
+    expect(fn()).toBeUndefined()
+  })
+})
 
 
 
