@@ -220,11 +220,26 @@ class AST{
         }
       }else if(next.text==='('){
         // 函数
-        primary = {type:AST.CallExpression,callee:primary}
+        primary = {
+          type:AST.CallExpression,
+          callee:primary,
+          arguments:this.parseArguments()
+        }
         this.consume(')')
       }
     }
     return primary
+  }
+  parseArguments(){
+    let args = []
+    if(!this.peek(')')){
+      do{
+        args.push(this.primary())
+      }while(this.expect(','))
+
+    }
+    // console.log(args)
+    return args
   }
   object(){
     let properties = []
@@ -385,7 +400,11 @@ class ASTCompiler{
       case AST.CallExpression:
         // 函数
         let callee = this.recurse(ast.callee)
-        return callee+'&&'+callee+'()'
+        let args = _.map(ast.arguments,(arg)=>{
+          return this.recurse(arg)
+        },this)
+        // console.log(args)
+        return callee+'&&'+callee+'('+args.join(',')+')'
     }
   }
   nonComputedMember(left,right){

@@ -202,15 +202,26 @@ describe('处理变量和函数',()=>{
 
   it('处理带一个参数的函数',()=>{
     let fn = parse('aFunction(n)')
-  // console.log(fn.toString())
     expect(fn({aFunction:n=> n,n:42})).toBe(42)
+  })
+  it('处理带一个参数是函数的函数',()=>{
+    let fn = parse('aFunction(argFn())')
+    expect(fn({
+        argFn:n=>42,
+        aFunction:arg=>arg,
+    })).toBe(42)
+  })
+  it('处理多个参数的函数',()=>{
+    let fn = parse('aFunction(37,n,argFn())')
+    expect(fn({
+        n:3,
+        argFn:n=>42,
+        aFunction:(a,b,c)=>a+b+c,
+    })).toBe(82)
+
   })
   // it('pars')
 })
-
-
-
-
 
 
 
