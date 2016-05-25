@@ -108,7 +108,7 @@ describe('simple parse ',()=>{
     expect(fn()).toEqual({"name":"woniu",'girlfriend':"mushbroom"})
   })
 
-  it('will parse an object with identifier keys',()=>{
+  it('will parse an object with identifier keys with quotes',()=>{
     let fn = parse('{"a":1,"b":"2","c":[2,3],"d":{"e":4}}')
     expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
   })
@@ -121,19 +121,52 @@ describe('simple parse ',()=>{
 describe('prase with attribute and function calls',()=>{
   it('looks up an attribute from the scope',()=>{
     let fn = parse('aKey')
-    expect(fn({aKey:42})).toBe(42)
-    expect(fn({})).toBeUndefined()
+    // expect(fn({aKey:42})).toBe(42)
+    // expect(fn({})).toBeUndefined()
   })
   it('returns undefined when looking up attributes from undefined',()=>{
     let fn = parse('aKey')
-    console.log(fn.toString())
     expect(fn()).toBeUndefined()
   })
+  it('will parse this',()=>{
+    let fn = parse('this')
+    let scope = {}
+    expect(fn(scope)).toBe(scope)
+    expect(fn()).toBeUndefined()
+  })
+  it('will look up a 2-part identifier path from an object',()=>{
+    let fn = parse('aKey.bKey')
+    // console.log(fn.toString())
+    expect(fn({aKey:{bKey:'woniu'}})).toBe('woniu')
+    expect(fn({aKey:{}})).toBeUndefined()
+    expect(fn()).toBeUndefined()
+    expect(fn({})).toBeUndefined()
+  })
+
+  it('will look up a memeber from an object',()=>{
+    // console.log({aKey:42}.aKey)
+    let fn = parse('{aKey:42}.aKey')
+    expect(fn()).toBe(42)
+  })
+
+  it('will look up a 4-part identifier path from an object',()=>{
+    let fn = parse('aKey.bKey.cKey.dKey')
+    console.log(fn.toString())
+    expect(fn({aKey:{bKey:{cKey:{dKey:'woniu'}}}})).toBe('woniu')
+    expect(fn({aKey:{bKey:{cKey:{}}}})).toBeUndefined()
+    expect(fn({aKey:{bKey:{}}})).toBeUndefined()
+    expect(fn({aKey:{}})).toBeUndefined()
+    expect(fn()).toBeUndefined()
+    expect(fn({})).toBeUndefined()
+  })
+
+
 })
 
 
 
 
+          // console.log(fn.toString())
 
 
 

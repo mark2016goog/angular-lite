@@ -41,7 +41,7 @@ class Lexer{
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
         this.index++
-      }else if(this.is('[]{}:,')){
+      }else if(this.is('[]{}:,.')){
         this.tokens.push({
           text:this.ch
         })
@@ -168,7 +168,8 @@ class AST{
     this.constants = {
       'null':{type:AST.Literal,value:null},
       'true':{type:AST.Literal,value:true},
-      'false':{type:AST.Literal,value:false}
+      'false':{type:AST.Literal,value:false},
+      'this':{type:AST.ThisExpression},
     }
 
 	}
@@ -180,19 +181,29 @@ class AST{
     return {type:AST.Program, body:this.primary()}
   }
   primary(){
+    let primary
     if(this.expect('[')){
       // console.log()
-      return this.arrayDeclaration()
+      primary = this.arrayDeclaration()
     }else if(this.expect('{')){
-      return this.object()
+      primary = this.object()
     }else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
-      return this.constants[this.consume().text]
+      primary = this.constants[this.consume().text]
     }else if(this.peek().identifier){
       // console.log(123)
-      return this.identifier()
+      primary = this.identifier()
     }else{
-      return this.constant()
+      primary = this.constant()
     }
+    while(this.expect('.')){
+      // console.log(a)
+      primary = {
+        type:AST.MemberExpression,
+        object:primary,
+        property:this.identifier()
+      }
+    }
+    return primary
   }
   object(){
     let properties = []
@@ -261,26 +272,36 @@ AST.ArrayExpression ='ArrayExpression'
 AST.ObjectExpression ='ObjectExpression'
 AST.Property ='Property'
 AST.Identifier = 'Identifier'
-
+AST.ThisExpression = 'ThisExpression'
+AST.MemberExpression = 'MemberExpression'
 // 抽象树遍历 = 最后一步 scope.a+scope.b
 class ASTCompiler{
 	constructor(astBuilder){
 		this.astBuilder = astBuilder
     // 怎么给class的原型属性赋值 先写这里吧 
     this.stringEscapeRegx = /[^ a-zA-Z0-9]/g
+    // 返回函数字符串的参数
+    this.arguName = 'obj'
 	}
 	compile(text){
 		let ast = this.astBuilder.ast(text)
-    // console.log(ast.body.elements)
-    this.state = {body:[]}
+    console.log(JSON.stringify(ast,null,2))
+    // vars需要用到的变量v0v1方便函数一开始就var定义好
+    // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
+    this.state = {body:[],nextId:0,vars:['_test_var']}
     this.recurse(ast)
     // console.log(this.state.body)
-    return new Function('obj',this.state.body.join(''))
+    // console.log(new Function('obj',this.state.body.join('')).toString())
+    // console.log(this.state.body.join(''))
+    return new Function(this.arguName ,'var '+this.state.vars.join(',')+';'+this.state.body.join(''))
 	}
   recurse(ast){
+    let varid
     switch(ast.type){
+
       case AST.Program:
         this.state.body.push('return ',this.recurse(ast.body),';')
+        // console.log(this.state.body.join(''))
         break
       case AST.Literal:
         return this.escape(ast.value)
@@ -301,10 +322,18 @@ class ASTCompiler{
         },this)
         return '{'+properties.join(',')+'}'
       case AST.Identifier:
-        this.state.body.push('var _v0;')
-        this._if('obj',this.assign('_v0',this.nonComputedMember('obj',ast.name)))
+        varid = this.nextId()
+        this._if(this.arguName ,this.assign(varid,this.nonComputedMember(this.arguName ,ast.name)))
         // console.log(this.nonComputedMember('obj',ast.name))
-        return '_v0'
+        return varid
+      case AST.ThisExpression:
+        // 如果是this 直接返回函数传递的参数
+        return this.arguName 
+      case AST.MemberExpression:
+        varid = this.nextId()
+        let left = this.recurse(ast.object)
+        this._if(left, this.assign(varid,this.nonComputedMember(left ,ast.property.name)))
+        return varid
     }
   }
   nonComputedMember(left,right){
@@ -312,6 +341,11 @@ class ASTCompiler{
   }
   assign(id,value){
     return id+'='+value+';'
+  }
+  nextId(){
+    let vid = 'v'+(this.state.nextId++)
+    this.state.vars.push(vid)
+    return vid
   }
   escape(value){
     if (_.isString(value)) {
