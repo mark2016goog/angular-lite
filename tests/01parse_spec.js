@@ -3,138 +3,138 @@ let _ = require('lodash')
 describe('Parse', () => {
 describe('simple parse ',()=>{
 
-  it('can parse an integer',()=>{
+  it('可以处理一个整数',()=>{
     let fn = parse('42')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42)
   })
-  it('can parse a folating point number',()=>{
+  it('可以处理小数',()=>{
     let fn = parse('4.2')
     expect(fn).toBeDefined()
     expect(fn()).toBe(4.2)
   })
-  it('can parse a folating point number without an interger part',()=>{
+  it('可以处理不带整数部分的小树',()=>{
     let fn = parse('.42')
     expect(fn).toBeDefined()
     expect(fn()).toBe(0.42)
   })
 
-  it('can parse a folating point number in scientific notataion',()=>{
+  it('可以处理科学计数法',()=>{
     let fn = parse('42e3')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42000)
   })
-  it('can parse scientific notataion with a foat coefficient',()=>{
+  it('可以处理不带整数的科学计数法',()=>{
     let fn = parse('.42e2')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42)
   })
-  it('can parse scientific notataion with negative exponents',()=>{
+  it('可以处理科学计数法 e后面是负数',()=>{
     let fn = parse('4200e-2')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42)
   })
-  it('can parse scientific notataion with the + sign',()=>{
+  it('可以处理科学计数法 e后面是正数',()=>{
     let fn = parse('.42e+2')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42)
   })
-  it('can parse upper case scientific notataion',()=>{
+  it('可以处理科学计数法 大写的E也OK',()=>{
     let fn = parse('.42E2')
     expect(fn).toBeDefined()
     expect(fn()).toBe(42)
   })
-  it('will not parse  invalid scientific notataion',()=>{
+  it('不合法的数字报错',()=>{
     expect(()=>{parse('42e-')}).toThrow()
     expect(()=>{parse('42e-a')}).toThrow()
   })
 
-  it('can parse a string in single quotes',()=>{
+  it('可以处理单引号字符串',()=>{
     let fn = parse("'abc'")
     expect(fn()).toBe('abc')
   })
-  it('can parse a string in double quotes',()=>{
+  it('双引号字符串',()=>{
     let fn = parse('"a-bc"')
     expect(fn()).toBe('a-bc')
   })
-  it('not parsea string ends with mismatching quotes',()=>{
+  it('字符串引号不匹配报错',()=>{
     expect(()=>{ parse('"abc\'') }).toThrow()
     // expect(fn()).toBe('abc')
   })
-  it('can parse a string with single quotes inside',()=>{
+  it('转义字符串',()=>{
     let fn = parse("'a\\\'b'")
     expect(fn()).toEqual('a\'b')
   })
-  it('can parse a string with double quotes inside',()=>{
+  it('转义字符串',()=>{
     let fn = parse('"a\\\"b"')
     expect(fn()).toEqual('a\"b')
   })
-  it('will not parse a string with invalid unicode escapes',()=>{
+  it('unicode不合法报错',()=>{
     expect(()=>{parse('"\\u00T0"')}).toThrow()
   })
 
-  it('will parse null',()=>{
+  it('处理null',()=>{
     let fn = parse("null")
     expect(fn()).toBe(null)
   })
-  it('will parse true',()=>{
+  it('处理true',()=>{
     let fn = parse("true")
     expect(fn()).toBe(true)
   })
-  it('will parse false',()=>{
+  it('处理alse',()=>{
     let fn = parse("false")
     expect(fn()).toBe(false)
   })
-  it('ignore white space',()=>{
+  it('忽略空格 tab 换行',()=>{
     let fn = parse(' \n 42 ')
     expect(fn()).toBe(42)
   })
-  it('will parse an empty array',()=>{
+  it('处理空list',()=>{
     let fn = parse('[]')
     expect(fn()).toEqual([])
   })
-  it('will parse an non-empty array',()=>{
+  it('处理非空数组',()=>{
     let fn = parse('[1, "two", [3,4], true]')
     expect(fn()).toEqual([1, "two", [3,4], true])
   })
 
 
-  it('will parse an empty object',()=>{
+  it('处理空对象',()=>{
     let fn = parse('{}')
     expect(fn()).toEqual({})
   })
-  it('will parse an non-empty object',()=>{
+  it('处理非空对象',()=>{
     let fn = parse('{"name":"woniu",\'girlfriend\':"mushbroom"}')
     expect(fn()).toEqual({"name":"woniu",'girlfriend':"mushbroom"})
   })
 
-  it('will parse an object with identifier keys with quotes',()=>{
+  it('处理复杂对象 key带引号',()=>{
     let fn = parse('{"a":1,"b":"2","c":[2,3],"d":{"e":4}}')
     expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
   })
-  it('will parse an object with identifier keys',()=>{
+  it('处理复杂对象，key不带引号',()=>{
     let fn = parse('{a:1,b:"2",c:[2,3],d:{e:4}}')
     expect(fn()).toEqual({a:1,b:"2",c:[2,3],d:{e:4}})
   })
 
 })
-describe('prase with attribute and function calls',()=>{
-  it('looks up an attribute from the scope',()=>{
+describe('处理变量和函数',()=>{
+  it('作用域里找变量',()=>{
     let fn = parse('aKey')
     // expect(fn({aKey:42})).toBe(42)
     // expect(fn({})).toBeUndefined()
   })
-  it('returns undefined when looking up attributes from undefined',()=>{
+  it('作用于里找不到就是Undefined',()=>{
     let fn = parse('aKey')
     expect(fn()).toBeUndefined()
   })
-  it('will parse this',()=>{
+  it('处理this',()=>{
     let fn = parse('this')
     let scope = {}
     expect(fn(scope)).toBe(scope)
     expect(fn()).toBeUndefined()
   })
-  it('will look up a 2-part identifier path from an object',()=>{
+  it('处理a.b这种变量',()=>{
     let fn = parse('aKey.bKey')
     // console.log(fn.toString())
     expect(fn({aKey:{bKey:'woniu'}})).toBe('woniu')
@@ -143,13 +143,13 @@ describe('prase with attribute and function calls',()=>{
     expect(fn({})).toBeUndefined()
   })
 
-  it('will look up a memeber from an object',()=>{
+  it('处理对象',()=>{
     // console.log({aKey:42}.aKey)
     let fn = parse('{aKey:42}.aKey')
     expect(fn()).toBe(42)
   })
 
-  it('will look up a 4-part identifier path from an object',()=>{
+  it('处理a.b.c.d复杂表达式',()=>{
     let fn = parse('aKey.bKey.cKey.dKey')
     // console.log(fn.toString())
     expect(fn({aKey:{bKey:{cKey:{dKey:'woniu'}}}})).toBe('woniu')
@@ -160,29 +160,29 @@ describe('prase with attribute and function calls',()=>{
     expect(fn({})).toBeUndefined()
   })
 
-  it('uses local instead of scope when there is a match key',()=>{
+  it('locals没有才找scope',()=>{
     let fn = parse('aKey')
     let scope = {aKey:'woniu'}
     let locals = {aKey:'mushbroom'}
     expect(fn(scope,locals)).toBe('mushbroom')
   })
-  it('does not use local instead of scope when no match key',()=>{
+  it('locals了找不到就用scope的',()=>{
     let fn = parse('aKey')
     let scope = {aKey:'woniu'}
     let locals = {bKey:'mushbroom'}
     expect(fn(scope,locals)).toBe('woniu')
   })
-  it('use locals instead of scope when the first part matches',()=>{
+  it('第一个key在local里了，就没scope事了',()=>{
     let fn = parse('aKey.bKey')
     let scope = {aKey:{bKey:'woniu'}}
     let locals = {aKey:{}}
     expect(fn(scope,locals)).toBeUndefined()
   })
-  it('parses a simple computed property access',()=>{
+  it('a[”b“]也能找',()=>{
     let fn = parse('aKey["bKey"]')
     expect(fn({aKey:{bKey:'woniu'}})).toBe('woniu')
   })
-  it('parse a array',()=>{
+  it('arr[1]也能处理',()=>{
     let fn = parse('arr[1]')
     expect(fn({arr:[1,2,3]})).toBe(2)
   })
@@ -194,11 +194,16 @@ describe('prase with attribute and function calls',()=>{
     let fn = parse('aKey[anotherKey["cKey"]]')
     expect(fn({anotherKey:{cKey:'mushbroom'},aKey:{'mushbroom':'woniu'}})).toBe('woniu')
   })
-  it('parses a function call',()=>{
+  it('处理函数',()=>{
     let fn = parse('aFunction()')
   // console.log(fn.toString())
-
     expect(fn({aFunction:()=> 'woniu'})).toBe('woniu')
+  })
+
+  it('处理带一个参数的函数',()=>{
+    let fn = parse('aFunction(n)')
+  // console.log(fn.toString())
+    expect(fn({aFunction:n=> n,n:42})).toBe(42)
   })
   // it('pars')
 })
