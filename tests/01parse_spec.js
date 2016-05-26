@@ -434,6 +434,15 @@ describe('处理变量和函数',()=>{
     expect(parse('false &&(true || true)')()).toBe(false)
     expect(parse('-((a%2===0)?1:2)')({a:42})).toBe(-1)
   })
+  it('解析多条语句',()=>{
+    let fn = parse('a=1;b=2;c=3;')
+    let scope = {}
+    fn(scope)
+    expect(scope).toEqual({a:1,b:2,c:3})
+  })
+  it('多条语句，最后是返回值',()=>{
+    expect(parse('a=1;b=2;a+b')({})).toBe(3)
+  })
   // it('pars')
 })
 

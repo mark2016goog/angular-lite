@@ -64,7 +64,7 @@ class Lexer{
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
         this.index++
-      }else if(this.is('[]{}:,.()?')){
+      }else if(this.is('[]{}:,.()?;')){
         // 这些符号都专门切开，数组 对象 函数 赋值
         this.tokens.push({
           text:this.ch
@@ -219,7 +219,15 @@ class AST{
     return this.program()
 	}
   program(){
-    return {type:AST.Program, body:this.assignment()}
+    let body = []
+    while(true){
+      if (this.tokens.length) {
+        body.push(this.assignment())
+      }
+      if (!this.expect(';')) {
+        return {type:AST.Program, body:body}
+      };
+    }
   }
   primary(){
     let primary
@@ -507,7 +515,10 @@ class ASTCompiler{
     let varid
     switch(ast.type){
       case AST.Program:
-        this.state.body.push('return ',this.recurse(ast.body),';')
+        _.forEach(_.initial(ast.body),stmt=>{
+          this.state.body.push(this.recurse(stmt),';')
+        },this)
+        this.state.body.push('return ',this.recurse(_.last(ast.body)),';')
         break
       case AST.Literal:
         return this.escape(ast.value)
