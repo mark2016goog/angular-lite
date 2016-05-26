@@ -1,7 +1,7 @@
 
 'use strict'
 
-var ESCAPES = {
+const ESCAPES = {
   'n': '\n',
   'f': '\f',
   'r': '\r',
@@ -10,6 +10,29 @@ var ESCAPES = {
   '\'': '\'',
   '"': '"'
 };
+
+const OPEARTORS = {
+  '+':true,
+  '!':true,
+  '-':true,
+  '*':true,
+  '/':true,
+  '%':true,
+  '=':true,
+  '==':true,
+  '!=':true,
+  '===':true,
+  '!==':true,
+  '>':true,
+  '<':true,
+  '>=':true,
+  '<=':true,
+  '&&':true,
+  '||':true
+}
+let ifDefined = (value,defaultValue)=>{
+  return typeof value==='undefined'?defaultValue:value
+}
 let parse = expr=>{
 	let lexer = new Lexer()
 	let parse = new Parser(lexer)
@@ -41,14 +64,26 @@ class Lexer{
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
         this.index++
-      }else if(this.is('[]{}:,.()=')){
+      }else if(this.is('[]{}:,.()?')){
         // 这些符号都专门切开，数组 对象 函数 赋值
         this.tokens.push({
           text:this.ch
         })
         this.index++
       }else{
-				throw 'unexpect next character '+ this.ch
+        let ch = this.ch
+        let ch2 = this.ch+this.peek()
+        let ch3 = this.ch+this.peek()+this.peek(2)
+        let op = OPEARTORS[ch]
+        let op2 = OPEARTORS[ch2]
+        let op3 = OPEARTORS[ch3]
+        if (op||op2||op3) {
+          let token = op3?ch3:(op2?ch2:ch)
+          this.tokens.push({text:token})
+          this.index += token.length
+        }else{
+  				throw 'unexpect next character '+ this.ch
+        }
 			}
 		}
     // console.log(this.tokens)
@@ -71,8 +106,9 @@ class Lexer{
     return chs.indexOf(this.ch)>=0
   }
   // 获取下一个位置字符，判断.42这种，小数点后面是不是数字，是数字要补0
-  peek(){
-    return this.index<this.text.length-1?this.text.charAt(this.index+1):false
+  peek(n){
+    n = n ||1
+    return this.index+n<this.text.length?this.text.charAt(this.index+n):false
   }
   // 挨个读取数字和小数点
 	readNumber(){
@@ -108,10 +144,12 @@ class Lexer{
   readString(quote){
     this.index++
     let string = ''
+    let rawString = quote
     let escape = false
     // console.log(quote)
     while(this.index<this.text.length){
       let ch = this.text.charAt(this.index)
+      rawString +=ch
       // \\后面的字符，看是不是有转义
       if(escape){
         // \后面u开头的 是16进制编码，需要用fromCharCode解码
@@ -136,7 +174,7 @@ class Lexer{
       }else if (ch===quote) {
         this.index++
         this.tokens.push({
-          text:string,
+          text:rawString,
           value:string
         })
         return 
@@ -175,7 +213,6 @@ class AST{
 
 	}
 	ast(text){
-    // console.log(this.assignment())
 		this.tokens = this.lexer.lex(text)
     // console.log(JSON.stringify(this.tokens,null,2))
 
@@ -186,15 +223,16 @@ class AST{
   }
   primary(){
     let primary
-    if(this.expect('[')){
-      // console.log()
+    if(this.expect('(')){
+      primary = this.assignment()
+      this.consume(')')
+    }else if(this.expect('[')){
       primary = this.arrayDeclaration()
     }else if(this.expect('{')){
       primary = this.object()
     }else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
       primary = this.constants[this.consume().text]
     }else if(this.peek().identifier){
-      // console.log(123)
       primary = this.identifier()
     }else{
       primary = this.constant()
@@ -232,9 +270,9 @@ class AST{
     return primary
   }
   assignment(){
-    let left = this.primary()
+    let left = this.ternary()
     if (this.expect('=')) {
-      let right = this.primary()
+      let right = this.ternary()
       return {type:AST.AssignmentExpression,left:left,right:right}
     };
     return left
@@ -247,7 +285,6 @@ class AST{
       }while(this.expect(','))
 
     }
-    // console.log(args)
     return args
   }
   object(){
@@ -311,6 +348,116 @@ class AST{
   identifier(){
     return {type:AST.Identifier,name:this.consume().text}
   }
+  unary(){
+    let token
+    if (token=this.expect('+','!','-')) {
+      return {
+        type:AST.UnaryExpression,
+        operator:token.text,
+        argument:this.unary()
+      }
+    }else{
+      return this.primary()
+    }
+  }
+  multiplicative(){
+    let left = this.unary()
+    let token
+    // 多个复杂计算，用while
+    while (token=this.expect('*','/','%')) {
+      left = {
+        type:AST.BinartExpression,
+        left:left,
+        operator:token.text,
+        right:this.unary()
+      }
+    };
+    return left
+  }
+  additive(){
+    let left = this.multiplicative()
+    let token 
+    while (token=this.expect('+','-')) {
+      left = {
+        type:AST.BinartExpression,
+        left:left,
+        operator:token.text,
+        right:this.multiplicative()
+      }
+    };
+    return left
+
+  }
+  relational(){
+    let left = this.additive()
+    let token 
+    while (token=this.expect('<','>','<=','>=')) {
+      left = {
+        type:AST.BinartExpression,
+        left:left,
+        operator:token.text,
+        right:this.additive()
+      }
+    };
+    return left
+  }
+  equality(){
+    let left = this.relational()
+    let token 
+    while (token=this.expect('==','!=','===','!==')) {
+      left = {
+        type:AST.BinartExpression,
+        left:left,
+        operator:token.text,
+        right:this.relational()
+      }
+    };
+    return left
+  }
+  logicalAND(){
+    let left = this.equality()
+    let token 
+    while (token=this.expect('&&')) {
+      left = {
+        type:AST.LogicalExpression,
+        left:left,
+        operator:token.text,
+        right:this.equality()
+      }
+    };
+    return left
+  }
+  logicalOR(){
+    let left = this.logicalAND()
+    let token 
+    while (token=this.expect('||')) {
+      left = {
+        type:AST.LogicalExpression,
+        left:left,
+        operator:token.text,
+        right:this.logicalAND()
+      }
+    };
+    return left
+  }
+  ternary(){
+    let test = this.logicalOR()
+    if(this.expect('?')) {
+      let consequent = this.assignment()
+      if (this.consume(':')) {
+        let alternate = this.assignment()
+        return {
+          type:AST.ConditionalExpression,
+          test:test,
+          consequent:consequent,
+          alternate:alternate
+        }
+
+      };
+    };
+    return test
+
+  }
   // test存在才操作
 
 }
@@ -324,6 +471,10 @@ AST.ThisExpression = 'ThisExpression'
 AST.MemberExpression = 'MemberExpression'
 AST.CallExpression = 'CallExpression'
 AST.AssignmentExpression = 'AssignmentExpression'
+AST.UnaryExpression = 'UnaryExpression'
+AST.BinartExpression = 'BinartExpression'
+AST.LogicalExpression = 'LogicalExpression'
+AST.ConditionalExpression = 'ConditionalExpression'
 // 抽象树遍历 = 最后一步 scope.a+scope.b
 class ASTCompiler{
 	constructor(astBuilder){
@@ -342,8 +493,13 @@ class ASTCompiler{
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
     this.state = {body:[],nextId:0,vars:['_test_var']}
     this.recurse(ast)
+    let fnString = 'var fn = function(s,l){'+
+          'var '+ this.state.vars.join(',')+' ;'+
+          this.state.body.join('')+
+          '};return fn;'
+      // console.log(fnString)
     // console.log(this.state.body.join(''))
-    return new Function(this.arguScope,this.arguLocals ,'var '+this.state.vars.join(',')+';'+this.state.body.join(''))
+    return new Function('ifDefined',fnString)(ifDefined)
 	}
   // create 赋值对象不存在 是不是创建
   recurse(ast, context,create){
@@ -370,18 +526,6 @@ class ASTCompiler{
         },this)
         return '{'+properties.join(',')+'}'
       case AST.Identifier:
-
-      // 这么拼字符串
-        // function anonymous(s, l) {
-        //   var _test_var, v0;
-        //   if (l && ('aKey' in l)) {
-        //     v0 = (l).aKey;
-        //   }
-        //   if (!(l && ('aKey' in l)) && s) {
-        //     v0 = (s).aKey;
-        //   }
-        //   return v0;
-        // }
         varid = this.nextId()
         this._if(this.getHasOwnProperty(this.arguLocals,ast.name),
               this.assign(varid,this.nonComputedMember(this.arguLocals ,ast.name)))
@@ -412,7 +556,8 @@ class ASTCompiler{
         if (ast.computed) {
           let right = this.recurse(ast.property)
           if (create) {
-            this._if(this.not(this.computedMember(left,right)), this.assign(this.computedMember(left,right),'{}'))
+            this._if(this.not(this.computedMember(left,right)), 
+                this.assign(this.computedMember(left,right),'{}'))
           }
           this._if(left, this.assign(varid,this.computedMember(left ,right)))
           if (context) {
@@ -460,7 +605,31 @@ class ASTCompiler{
           leftExpr = this.nonComputedMember(leftContext.context,leftContext.name)          
         }
         return this.assign(leftExpr,this.recurse(ast.right))
+      case AST.UnaryExpression:
+        return ast.operator+'('+this.ifDefined(this.recurse(ast.argument),0)+')'
+      case AST.BinartExpression:
+        // 乘除
+        return '('+this.recurse(ast.left)+')'+ast.operator+'('+this.recurse(ast.right)+')'
+      case AST.LogicalExpression:
+        varid = this.nextId()
+        this.state.body.push(this.assign(varid,this.recurse(ast.left)))
+        this._if(ast.operator==='&&'?varid:this.not(varid),
+                this.assign(varid, this.recurse(ast.right)))
+        return varid
+      case AST.ConditionalExpression:
+        varid = this.nextId()
+        let testId = this.nextId()
+        this.state.body.push(this.assign(testId, this.recurse(ast.test)))
+        // console.log(ast.consequent)
+
+        this._if(testId, this.assign(varid, this.recurse(ast.consequent)))
+
+        this._if(this.not(testId), this.assign(varid, this.recurse(ast.alternate)))
+        return varid
     }
+  }
+  ifDefined(value,defaultValue){
+    return 'ifDefined('+value+','+this.escape(defaultValue)+')'
   }
   nonComputedMember(left,right){
     return '('+left+').'+right

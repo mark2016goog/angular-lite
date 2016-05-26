@@ -305,6 +305,135 @@ describe('处理变量和函数',()=>{
       fn(scope)
       expect(scope.obj["anAttribute"].path).toBe('woniu')
   })
+  it('处理一元操作符+',()=>{
+    expect(parse('+42')()).toBe(42)
+    expect(parse('+a')({a:42})).toBe(42)
+  })
+  it('+undefined替换成0',()=>{
+    // console.log(parse('+a').toString())
+    expect(parse('+a')({})).toBe(0)
+
+  })
+  it('处理一元操作符!',()=>{
+    expect(parse('!true')()).toBe(false)
+    expect(parse('!42')()).toBe(false)
+    expect(parse('!a')({a:false})).toBe(true)
+    expect(parse('!!a')({a:false})).toBe(false)
+    expect(parse('!a')()).toBe(true)
+  })
+  it('处理一元操作符-',()=>{
+    expect(parse('-42')()).toBe(-42)
+    expect(parse('-a')({a:42})).toBe(-42)
+    expect(parse('--a')({a:42})).toBe(42)
+    expect(parse('-a')({})).toBe(0)
+
+  })
+  it('处理！字符串',()=>{
+    expect(parse('"!"')()).toBe('!')
+  })
+  it('处理乘法',()=>{
+    expect(parse('2 * 4 ')()).toBe(8)
+  })
+  it('处理除法',()=>{
+    expect(parse('20 / 4 ')()).toBe(5)
+
+  })
+  it('处理求余',()=>{
+    expect(parse('20 % 8 ')()).toBe(4)
+
+  })
+  it('处理复杂的数学计算',()=>{
+    expect(parse('36 * 2 % 5')()).toBe(2)
+  })
+  it('处理加法',()=>{
+      expect(parse('2+2')()).toBe(4)
+  })
+  it('处理减法',()=>{
+      expect(parse('4-2')()).toBe(2)
+  })
+  it('复杂的加减乘数',()=>{
+      expect(parse('2 + 3 * 5')()).toBe(17)
+      expect(parse('2 + 3 * 5 + 3')()).toBe(20)
+    
+  })
+  it('处理><=',()=>{
+      expect(parse('2<3')()).toBe(true)
+      expect(parse('3<2')()).toBe(false)
+      expect(parse('1<=2')()).toBe(true)
+
+      expect(parse('2<=2')()).toBe(true)
+      expect(parse('1>=2')()).toBe(false)
+      expect(parse('2>=2')()).toBe(true)
+
+  })
+  it('处理==,===,!==',()=>{
+      expect(parse('42==42')()).toBe(true)
+      expect(parse('42=="42"')()).toBe(true)
+      expect(parse('42!=42')()).toBe(false)
+      expect(parse('42===42')()).toBe(true)
+      expect(parse('42==="42"')()).toBe(false)
+      expect(parse('42!==42')()).toBe(false)
+
+  })
+  it('多个判断',()=>{
+      expect(parse('2=="2" > 2 ==="2"')()).toBe(false)
+  })
+  it('多个判断',()=>{
+      expect(parse('2+3 < 6-2')()).toBe(false)
+  })
+  it('处理&&',()=>{
+    expect(parse('true && true')()).toBe(true)
+    expect(parse('true && false')()).toBe(false)
+    expect(parse('false && true')()).toBe(false)
+    expect(parse('false && false')()).toBe(false)
+  })
+  it('处理||',()=>{
+    expect(parse('true || true')()).toBe(true)
+    expect(parse('true || false')()).toBe(true)
+    expect(parse('false || true')()).toBe(true)
+    expect(parse('false || false')()).toBe(false)
+  })
+  it('处理多个&&',()=>{
+    expect(parse('true && true&& true')()).toBe(true)
+    expect(parse('true && false&& true')()).toBe(false)
+  })
+  it('处理多个||',()=>{
+    expect(parse('true || true|| true')()).toBe(true)
+    expect(parse('true || false|| true')()).toBe(true)
+    expect(parse('false || false|| true')()).toBe(true)
+    expect(parse('false || false|| false')()).toBe(false)
+  })
+  it('&&控制函数执行',()=>{
+    let invoked
+    let scope = {fn:function(){invoked=true}}
+    parse('false&&fn()')(scope)
+    expect(invoked).toBeUndefined()
+  })
+  it('||控制函数执行',()=>{
+    let invoked
+    let scope = {fn:function(){invoked=true}}
+    parse('true||fn()')(scope)
+    expect(invoked).toBeUndefined()
+  })
+  it('&&优先级比||高',()=>{
+    expect(parse('false &&true|| true')()).toBe(true)
+  })
+  it('||优先级比===低',()=>{
+    expect(parse('1===2||2===2')()).toBeTruthy()
+  })
+  it('三元表达式',()=>{
+    // console.log(parse('a===42?true:false').toString())
+    expect(parse('a===42?true:false')({a:42})).toBe(true)
+    expect(parse('a===42?true:false')({a:43})).toBe(false)
+  })
+  it('or比三元表达式优先级高',()=>{
+    expect(parse('0||1?0||2:0||3')()).toBe(2)
+  })
+  it('处理带括号的表达式',()=>{
+    expect(parse('21*(3 - 1)')()).toBe(42)
+    expect(parse('false &&(true || true)')()).toBe(false)
+    expect(parse('-((a%2===0)?1:2)')({a:42})).toBe(-1)
+  })
   // it('pars')
 })
 
