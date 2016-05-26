@@ -41,8 +41,8 @@ class Lexer{
       }else if(this.isWhiteSpace(this.ch)){
         // 空格忽略不计
         this.index++
-      }else if(this.is('[]{}:,.()')){
-        // 这些符号都专门切开，数组 对象 函数
+      }else if(this.is('[]{}:,.()=')){
+        // 这些符号都专门切开，数组 对象 函数 赋值
         this.tokens.push({
           text:this.ch
         })
@@ -175,13 +175,14 @@ class AST{
 
 	}
 	ast(text){
+    // console.log(this.assignment())
 		this.tokens = this.lexer.lex(text)
     // console.log(JSON.stringify(this.tokens,null,2))
 
     return this.program()
 	}
   program(){
-    return {type:AST.Program, body:this.primary()}
+    return {type:AST.Program, body:this.assignment()}
   }
   primary(){
     let primary
@@ -230,11 +231,19 @@ class AST{
     }
     return primary
   }
+  assignment(){
+    let left = this.primary()
+    if (this.expect('=')) {
+      let right = this.primary()
+      return {type:AST.AssignmentExpression,left:left,right:right}
+    };
+    return left
+  }
   parseArguments(){
     let args = []
     if(!this.peek(')')){
       do{
-        args.push(this.primary())
+        args.push(this.assignment())
       }while(this.expect(','))
 
     }
@@ -252,7 +261,7 @@ class AST{
           property.key = this.constant()
         }
         this.consume(':')
-        property.value = this.primary()
+        property.value = this.assignment()
         properties.push(property)
       }while(this.expect(','))
     };
@@ -264,7 +273,10 @@ class AST{
     let elements = []
     if (!this.peek(']')) {
       do{
-        elements.push(this.primary())
+        if (this.peek(']')) {
+          break
+        }
+        elements.push(this.assignment())
       }while(this.expect(','))
     };
     this.consume(']')
@@ -311,6 +323,7 @@ AST.Identifier = 'Identifier'
 AST.ThisExpression = 'ThisExpression'
 AST.MemberExpression = 'MemberExpression'
 AST.CallExpression = 'CallExpression'
+AST.AssignmentExpression = 'AssignmentExpression'
 // 抽象树遍历 = 最后一步 scope.a+scope.b
 class ASTCompiler{
 	constructor(astBuilder){
@@ -329,18 +342,16 @@ class ASTCompiler{
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
     this.state = {body:[],nextId:0,vars:['_test_var']}
     this.recurse(ast)
-    // console.log(this.state.body)
-    // console.log(new Function('obj',this.state.body.join('')).toString())
     // console.log(this.state.body.join(''))
     return new Function(this.arguScope,this.arguLocals ,'var '+this.state.vars.join(',')+';'+this.state.body.join(''))
 	}
-  recurse(ast){
+  // create 赋值对象不存在 是不是创建
+  recurse(ast, context,create){
+    // console.log(ast)
     let varid
     switch(ast.type){
-
       case AST.Program:
         this.state.body.push('return ',this.recurse(ast.body),';')
-        // console.log(this.state.body.join(''))
         break
       case AST.Literal:
         return this.escape(ast.value)
@@ -348,11 +359,9 @@ class ASTCompiler{
         let elements = _.map(ast.elements,element=>{
           return this.recurse(element)
         },this)
-        // console.log(elements)
         return '['+elements.join(',')+']'
       case AST.ObjectExpression:
         let properties = _.map(ast.properties,property=>{
-
           let key =   property.key.type===AST.Identifier?
                       property.key.name:
                       this.escape(property.key.value)
@@ -376,41 +385,87 @@ class ASTCompiler{
         varid = this.nextId()
         this._if(this.getHasOwnProperty(this.arguLocals,ast.name),
               this.assign(varid,this.nonComputedMember(this.arguLocals ,ast.name)))
+        if(create){
+          this._if(this.not(this.getHasOwnProperty(this.arguLocals,ast.name))+
+                  ' && s && '+
+                  this.not(this.getHasOwnProperty(this.arguScope,ast.name)),
+              this.assign(this.nonComputedMember(this.arguScope,ast.name),'{}'))
+         // this._if(this.not()) 
+        }
         this._if(this.not(this.getHasOwnProperty(this.arguLocals,ast.name))+'&&'+this.arguScope,
               this.assign(varid,this.nonComputedMember(this.arguScope ,ast.name)))
-        // console.log(this.nonComputedMember('obj',ast.name))
+        if (context) {
+          context.context = this.getHasOwnProperty('l',ast.name)+'?l:s'
+          context.name = ast.name
+          context.computed = false
+        };
         return varid
       case AST.ThisExpression:
         // 如果是this 直接返回函数传递的参数
         return this.arguScope 
       case AST.MemberExpression:
-
         varid = this.nextId()
-        let left = this.recurse(ast.object)
-
+        let left = this.recurse(ast.object,undefined,create)
+        if (context) {
+          context.context = left
+        };
         if (ast.computed) {
           let right = this.recurse(ast.property)
-          // console.log(this.ComputedMember(left ,right))
-          this._if(left, this.assign(varid,this.ComputedMember(left ,right)))
+          if (create) {
+            this._if(this.not(this.computedMember(left,right)), this.assign(this.computedMember(left,right),'{}'))
+          }
+          this._if(left, this.assign(varid,this.computedMember(left ,right)))
+          if (context) {
+            context.name = right
+            context.computed = true
+          };
         }else{
+          if (create) {
+            this._if(this.not(this.nonComputedMember(left,ast.property.name)), 
+                this.assign(this.nonComputedMember(left,ast.property.name),'{}'))
+          }
+
           this._if(left, this.assign(varid,this.nonComputedMember(left ,ast.property.name)))
+          if (context) {
+            context.name = ast.property.name
+            context.computed = false
+          };
+
         }
-        // console.log(this.state.body)
         return varid
       case AST.CallExpression:
         // 函数
-        let callee = this.recurse(ast.callee)
+        let callContext = {}
+        let callee = this.recurse(ast.callee, callContext)
         let args = _.map(ast.arguments,(arg)=>{
           return this.recurse(arg)
         },this)
+        if (callContext.name) {
+          if (callContext.computed) {
+            callee = this.computedMember(callContext.context,callContext.name)
+          }else{
+            callee = this.nonComputedMember(callContext.context,callContext.name)
+          }
+        };
         // console.log(args)
         return callee+'&&'+callee+'('+args.join(',')+')'
+      case AST.AssignmentExpression:
+        // 赋值
+        let leftContext = {}
+        this.recurse(ast.left, leftContext, true)
+        let leftExpr
+        if (leftContext.computed) {
+          leftExpr = this.computedMember(leftContext.context,leftContext.name)
+        }else{
+          leftExpr = this.nonComputedMember(leftContext.context,leftContext.name)          
+        }
+        return this.assign(leftExpr,this.recurse(ast.right))
     }
   }
   nonComputedMember(left,right){
     return '('+left+').'+right
   }
-  ComputedMember(left,right){
+  computedMember(left,right){
     return '('+left+')['+right+']'
   }
   assign(id,value){

@@ -220,15 +220,96 @@ describe('处理变量和函数',()=>{
     })).toBe(82)
 
   })
+  it('解析绑定在对象上的函数中的this ：a["fn"]()',()=>{
+    let scope = {
+      obj:{
+        aname:'woniu',
+        aFunction:function(){
+          return this.aname
+        }
+      }
+    }
+    let fn = parse('obj["aFunction"]()')
+    expect(fn(scope)).toBe('woniu')
+  })
+  it('解析绑定在对象上的函数中的this ：a.fn()',()=>{
+    let scope = {
+      obj:{
+        aname:'woniu',
+        aFunction:function(){
+          return this.aname
+        }
+      }
+    }
+    let fn = parse('obj.aFunction()')
+    expect(fn(scope)).toBe('woniu')
+  })
+  it('处理this就是scope',()=>{
+    let scope = {
+      aFunction:function(){
+        return this
+      }
+    }
+    let fn = parse('aFunction()')
+  // console.log(fn.toString())
+
+    expect(fn(scope)).toBe(scope)
+  })
+  it('优先处理local上的函数',()=>{
+    let scope = {}
+    let locals= {
+      aFunction:function(){
+        return this
+      }
+    }
+    let fn = parse('aFunction()')
+    expect(fn(scope,locals)).toBe(locals)
+  })
+  it('处理变量赋值',()=>{
+      let fn = parse('anAttribute="woniu"')
+      let scope = {}
+      fn(scope)
+      expect(scope.anAttribute).toBe('woniu')
+  })
+  it('处理函数赋值',()=>{
+      let fn = parse('anAttribute=aFunction()')
+      let scope = {aFunction:function(){return 'woniu'}}
+      fn(scope)
+      expect(scope.anAttribute).toBe('woniu')
+  })
+  it('处理对象复制a["b"]=c',()=>{
+      let fn = parse('obj["anAttribute"]="woniu"')
+      let scope = {obj:{}}
+      fn(scope)
+      expect(scope.obj.anAttribute).toBe('woniu')
+    
+  })
+  it('处理对象赋值a.b=c',()=>{
+      let fn = parse('obj.anAttribute="woniu"')
+      let scope = {obj:{}}
+      fn(scope)
+      expect(scope.obj.anAttribute).toBe('woniu')
+  })
+  it('处理复杂的赋值a[0][b]=c这种',()=>{
+      let fn = parse('obj[0].anAttribute="woniu"')
+      let scope = {obj:[{},'mushbroom']}
+      fn(scope)
+      expect(scope.obj[0].anAttribute).toBe('woniu')
+      expect(scope.obj[1]).toBe('mushbroom')
+
+  })
+  it('赋值如果对象不存在，先设置一个空对象，防止出错',()=>{
+      let fn = parse('obj["anAttribute"].path="woniu"')
+      // console.log(fn.toString())
+      let scope = {}
+      fn(scope)
+      expect(scope.obj["anAttribute"].path).toBe('woniu')
+  })
   // it('pars')
 })
 
 
-
   // console.log(fn.toString())
-
-
-
 
 
 
