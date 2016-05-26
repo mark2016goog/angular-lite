@@ -468,13 +468,16 @@ class AST{
   }
   filter(){
     let left = this.assignment()
-    let token 
-    while (token=this.expect('|')) {
+    while (this.expect('|')) {
+      let arg = [left]
       left = {
         type:AST.CallExpression,
         callee:this.identifier(),
-        arguments:[left],
+        arguments:arg,
         filter:true
+      }
+      while(this.expect(':')){
+        arg.push(this.assignment())
       }
     };
     return left

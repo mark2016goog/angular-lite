@@ -24,12 +24,35 @@ describe('Filter', () => {
   })
   it('可以处理|的过滤器表达式，需要parse支持',()=>{
     register('upcase',()=>{
-      return function(str){
-        return str.toUpperCase()
-      }
+      return str=>str.toUpperCase()
+
     })
     let fn = parse('aString|upcase')
     expect(fn({aString:'heLLo'})).toEqual('HELLO')
+  })
+  it('可以处理多个|的过滤器表达式',()=>{
+    register('upcase',()=>{
+      return str=>str.toUpperCase()
+    })
+    register('exclamate',()=>{
+      return str=>str+'!'
+    })
+    let fn = parse('aString|upcase|exclamate')
+    expect(fn({aString:'heLLo'})).toEqual('HELLO!')
+  })
+  it('支持过滤器用:传参',()=>{
+    register('repeat',()=>{
+      return (str,times)=>_.repeat(str, times)
+    })
+    let fn = parse('aString|repeat:3')
+    expect(fn({aString:'hello'})).toEqual('hellohellohello')
+  })
+  it('支持过滤器用:传多个参数',()=>{
+    register('sorrond',()=>{
+      return (str,left,right)=>left+str+right
+    })
+    let fn = parse('aString|sorrond:"*":"!"')
+    expect(fn({aString:'hello'})).toEqual('*hello!')
   })
 })
 
