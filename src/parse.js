@@ -1,6 +1,6 @@
 
 'use strict'
-
+let filter = require('./filter').filter
 const ESCAPES = {
   'n': '\n',
   'f': '\f',
@@ -28,7 +28,8 @@ const OPEARTORS = {
   '>=':true,
   '<=':true,
   '&&':true,
-  '||':true
+  '||':true,
+  '|':true
 }
 let ifDefined = (value,defaultValue)=>{
   return typeof value==='undefined'?defaultValue:value
@@ -222,7 +223,7 @@ class AST{
     let body = []
     while(true){
       if (this.tokens.length) {
-        body.push(this.assignment())
+        body.push(this.filter())
       }
       if (!this.expect(';')) {
         return {type:AST.Program, body:body}
@@ -232,7 +233,7 @@ class AST{
   primary(){
     let primary
     if(this.expect('(')){
-      primary = this.assignment()
+      primary = this.filter()
       this.consume(')')
     }else if(this.expect('[')){
       primary = this.arrayDeclaration()
@@ -464,10 +465,20 @@ class AST{
       };
     };
     return test
-
   }
-  // test存在才操作
-
+  filter(){
+    let left = this.assignment()
+    let token 
+    while (token=this.expect('|')) {
+      left = {
+        type:AST.CallExpression,
+        callee:this.identifier(),
+        arguments:[left],
+        filter:true
+      }
+    };
+    return left
+  }
 }
 AST.Program ='Program'
 AST.Literal ='Literal'
@@ -499,16 +510,28 @@ class ASTCompiler{
     // console.log(JSON.stringify(ast,null,2))
     // vars需要用到的变量v0v1方便函数一开始就var定义好
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
-    this.state = {body:[],nextId:0,vars:['_test_var']}
+    this.state = {body:[],nextId:0,vars:['_test_var'],filters:{}}
     this.recurse(ast)
-    let fnString = 'var fn = function(s,l){'+
+    // console.log(this.state)
+    let fnString = this.filterPrefix()+
+          'var fn = function(s,l){'+
           'var '+ this.state.vars.join(',')+' ;'+
           this.state.body.join('')+
           '};return fn;'
       // console.log(fnString)
     // console.log(this.state.body.join(''))
-    return new Function('ifDefined',fnString)(ifDefined)
+    return new Function('ifDefined','filter',fnString)(ifDefined,filter)
 	}
+  filterPrefix(){
+    if (_.isEmpty(this.state.filters)) {
+      return ''
+    }else{
+      let parts = _.map(this.state.filters,(varName,filterName)=>{
+        return varName + '=' + 'filter('+this.escape(filterName)+')'
+      }, this)
+      return 'var '+parts.join(',') + ';'
+    }
+  }
   // create 赋值对象不存在 是不是创建
   recurse(ast, context,create){
     // console.log(ast)
@@ -591,20 +614,31 @@ class ASTCompiler{
         return varid
       case AST.CallExpression:
         // 函数
-        let callContext = {}
-        let callee = this.recurse(ast.callee, callContext)
-        let args = _.map(ast.arguments,(arg)=>{
-          return this.recurse(arg)
-        },this)
-        if (callContext.name) {
-          if (callContext.computed) {
-            callee = this.computedMember(callContext.context,callContext.name)
-          }else{
-            callee = this.nonComputedMember(callContext.context,callContext.name)
-          }
-        };
-        // console.log(args)
-        return callee+'&&'+callee+'('+args.join(',')+')'
+        let callContext,callee,args
+        if (ast.filter) {
+          callee = this.filter(ast.callee.name)
+          // console.log(callee)
+          args = _.map(ast.arguments,(arg)=>{
+            return this.recurse(arg)
+          },this)
+          return callee+'('+args+')'
+        }else{
+          callContext = {}
+          callee = this.recurse(ast.callee, callContext)
+          args = _.map(ast.arguments,(arg)=>{
+            return this.recurse(arg)
+          },this)
+          if (callContext.name) {
+            if (callContext.computed) {
+              callee = this.computedMember(callContext.context,callContext.name)
+            }else{
+              callee = this.nonComputedMember(callContext.context,callContext.name)
+            }
+          };
+          // console.log(args)
+          return callee+'&&'+callee+'('+args.join(',')+')'          
+        }
+        break
       case AST.AssignmentExpression:
         // 赋值
         let leftContext = {}
@@ -639,6 +673,12 @@ class ASTCompiler{
         return varid
     }
   }
+  filter(name){
+    if (!this.state.filters.hasOwnProperty(name)) {
+      this.state.filters[name] = this.nextId(true)
+    };
+    return this.state.filters[name]
+  }
   ifDefined(value,defaultValue){
     return 'ifDefined('+value+','+this.escape(defaultValue)+')'
   }
@@ -651,9 +691,11 @@ class ASTCompiler{
   assign(id,value){
     return id+'='+value+';'
   }
-  nextId(){
+  nextId(skip){
     let vid = 'v'+(this.state.nextId++)
-    this.state.vars.push(vid)
+    if (!skip) {
+      this.state.vars.push(vid)
+    };
     return vid
   }
   escape(value){
