@@ -136,18 +136,179 @@ describe('filter filter',()=>{
     expect(fn(scope)).toEqual(['cc','b'])
   })
 
+  it('用对象过滤',()=>{
+    let fn = parse('arr | filter:{name:"o"}')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jone',test:'Fox'},
+          {name:'Mary',test:'Quick'}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'},
+          {name:'jone',test:'Fox'}])
+  })
+  it('用多个key的对象过滤，必须匹配所有的key',()=>{
+    let fn = parse('arr | filter:{name:"o",test:"n"}')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'},]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'}])
+  })
+
+  it('空对象不过滤',()=>{
+    let fn = parse('arr | filter:{}')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'}])
+  })
+
+
+  it('多层object过滤',()=>{
+    let fn = parse('arr | filter:{name:{name:"o"}}')
+    let scope = {
+      arr:[{name:{name:'john',test:'Brown'}},
+          {name:{name:'jane',test:'Fox'}},
+          {name:{name:'Mary',test:'Quick'}},]
+    }
+    expect(fn(scope)).toEqual([
+          {name:{name:'john',test:'Brown'}}])
+  })
+  it('多层object过滤,可以用!开头取反',()=>{
+    let fn = parse('arr | filter:{name:{name:"!o"}}')
+    let scope = {
+      arr:[{name:{name:'john',test:'Brown'}},
+          {name:{name:'jane',test:'Fox'}},
+          {name:{name:'Mary',test:'Quick'}},]
+    }
+    expect(fn(scope)).toEqual([
+          {name:{name:'jane',test:'Fox'}},
+          {name:{name:'Mary',test:'Quick'}}])
+  })
+
+  it('值是undefined的时候不过滤',()=>{
+    let fn = parse('arr | filter:{name:notDefined}')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'}])
+  })
 
 
 
+  it('多层object过滤,过滤数组',()=>{
+    let fn = parse('arr | filter:{users:{name:{first:"o"}}}')
+    let scope = {
+      arr:[
+        {
+          users:[
+                {name:{first:'john'},role:'admin'},{name:{first:'jane'},role:'testo'}
+              ]
+        },
+        {users:[{name:{first:'mary'},role:'admin'}]}
+      ]
+    }
+    expect(fn(scope)).toEqual([
+        {
+          users:[{name:{first:'john'},role:'admin'},
+                {name:{first:'jane'},role:'testo'}]
+        }
+        ])
+  // console.log(_)
+
+  })
+  it('只在一个level过滤', function() {
+    var items = [{user: 'Bob'},
+                 {user: {name: 'Bob'}},
+                 {user: {name: {first: 'Bob', last: 'Fox'}}}];
+    var fn = parse('arr | filter:{user: {name: "Bob"}}');
+    expect(fn({arr: [
+      {user: 'Bob'},
+      {user: {name: 'Bob'}},
+      {user: {name: {first: 'Bob', last: 'Fox'}}}
+    ]})).toEqual([
+      {user: {name: 'Bob'}}
+    ]);
+  });
 
 
 
+  it('key是$表示匹配所有属性',()=>{
+    let fn = parse('arr | filter:{$:"o"}')
+    let scope = {
+      arr:[{name:'jhn',test:'Brown'},
+          {name:'jone',test:'Fx'},
+          {name:'Mary',test:'Quick'}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'jhn',test:'Brown'},
+          {name:'jone',test:'Fx'}])
+  })
 
+  it('filters with a wildcard property', function() {
+    var fn = parse('arr | filter:{$: "o"}');
+    expect(fn({arr: [
+      {name: 'Joe', role: 'admin'},
+      {name: 'Jane', role: 'moderator'},
+      {name: 'Mary', role: 'admin'}
+    ]})).toEqual([
+      {name: 'Joe', role: 'admin'},
+      {name: 'Jane', role: 'moderator'}
+    ]);
+  });
 
+  it('filters nested objects with a wildcard property', function() {
+    var fn = parse('arr | filter:{$: "o"}');
+    expect(fn({arr: [
+      {name: {first: 'Joe'}, role: 'admin'},
+      {name: {first: 'Jane'}, role: 'moderator'},
+      {name: {first: 'Mary'}, role: 'admin'}
+    ]})).toEqual([
+      {name: {first: 'Joe'}, role: 'admin'},
+      {name: {first: 'Jane'}, role: 'moderator'}
+    ]);
+  });
 
+  it('filters wildcard properties scoped to parent', function() {
+    var fn = parse('arr | filter:{name: {$: "o"}}');
+    expect(fn({arr: [
+      {name: {first: 'Joe', last: 'Fox'}, role: 'admin'},
+      {name: {first: 'Jane', last: 'Quick'}, role: 'moderator'},
+      {name: {first: 'Mary', last: 'Brown'}, role: 'admin'}
+    ]})).toEqual([
+      {name: {first: 'Joe', last: 'Fox'}, role: 'admin'},
+      {name: {first: 'Mary', last: 'Brown'}, role: 'admin'}
+    ]);
+  });
 
+  it('filters primitives with a wildcard property', function() {
+    var fn = parse('arr | filter:{$: "o"}');
+    expect(fn({arr: ['Joe', 'Jane', 'Mary']})).toEqual(['Joe']);
+  });
 
-
+  it('filters with a nested wildcard property', function() {
+    var fn = parse('arr | filter:{$: {$: "o"}}');
+    expect(fn({arr: [
+      {name: {first: 'Joe'}, role: 'admin'},
+      {name: {first: 'Jane'}, role: 'moderator'},
+      {name: {first: 'Mary'}, role: 'admin'}
+    ]})).toEqual([
+      {name: {first: 'Joe'}, role: 'admin'}
+    ]);
+  });
 
 
 
