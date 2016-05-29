@@ -258,19 +258,7 @@ describe('filter filter',()=>{
           {name:'jone',test:'Fx'}])
   })
 
-  it('filters with a wildcard property', function() {
-    var fn = parse('arr | filter:{$: "o"}');
-    expect(fn({arr: [
-      {name: 'Joe', role: 'admin'},
-      {name: 'Jane', role: 'moderator'},
-      {name: 'Mary', role: 'admin'}
-    ]})).toEqual([
-      {name: 'Joe', role: 'admin'},
-      {name: 'Jane', role: 'moderator'}
-    ]);
-  });
-
-  it('filters nested objects with a wildcard property', function() {
+  it('过滤复杂层级', function() {
     var fn = parse('arr | filter:{$: "o"}');
     expect(fn({arr: [
       {name: {first: 'Joe'}, role: 'admin'},
@@ -282,7 +270,7 @@ describe('filter filter',()=>{
     ]);
   });
 
-  it('filters wildcard properties scoped to parent', function() {
+  it('指定层级', function() {
     var fn = parse('arr | filter:{name: {$: "o"}}');
     expect(fn({arr: [
       {name: {first: 'Joe', last: 'Fox'}, role: 'admin'},
@@ -294,12 +282,9 @@ describe('filter filter',()=>{
     ]);
   });
 
-  it('filters primitives with a wildcard property', function() {
-    var fn = parse('arr | filter:{$: "o"}');
-    expect(fn({arr: ['Joe', 'Jane', 'Mary']})).toEqual(['Joe']);
-  });
 
-  it('filters with a nested wildcard property', function() {
+
+  it('多个$指定多个层级过滤', function() {
     var fn = parse('arr | filter:{$: {$: "o"}}');
     expect(fn({arr: [
       {name: {first: 'Joe'}, role: 'admin'},
