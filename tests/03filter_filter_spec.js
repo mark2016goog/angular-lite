@@ -92,9 +92,49 @@ describe('filter filter',()=>{
           {name:'john',test:true}])
   })
 
+  it('用数字模糊过滤字符串',()=>{
+    let fn = parse('arr | filter:42')
+    let scope = {
+      arr:[{name:'john',test:42},
+          {name:'jane',test:'$42yuan'},
+          {name:'Mary',test:44}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:42},
+          {name:'jane',test:'$42yuan'}])
+  })
 
+  it('过滤null',()=>{
+    let fn = parse('arr | filter:null')
+    let scope = {
+      arr:[null,undefined,'not null']
+    }
+    expect(fn(scope)).toEqual([null])
+  })
 
+  it('过滤null字符串',()=>{
+    let fn = parse('arr | filter:"null"')
+    let scope = {
+      arr:[null,undefined,'not null']
+    }
+    expect(fn(scope)).toEqual(['not null'])
+  })
 
+  it('不匹配undefined',()=>{
+    let fn = parse('arr | filter:"undefined"')
+    let scope = {
+      arr:[null,undefined,'not undefined']
+    }
+    expect(fn(scope)).toEqual(['not undefined'])
+  })
+
+  it('!开头取反过滤',()=>{
+    let fn = parse('arr | filter:"!a"')
+    let scope = {
+      arr:['cc','b','ca','a']
+    }
+    expect(fn(scope)).toEqual(['cc','b'])
+  })
 
 
 
