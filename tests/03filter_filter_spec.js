@@ -37,4 +37,81 @@ describe('filter filter',()=>{
     }
     expect(fn(scope)).toEqual(['a','cA','a'])
   })
+
+  it('可以过滤数组',()=>{
+    let fn = parse('arr | filter:"o"')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jane',test:'Fox'},
+          {name:'Mary',test:'Quick'},]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'},
+          {name:'jane',test:'Fox'},])
+  })
+
+  it('可以过滤嵌套的数组',()=>{
+    let fn = parse('arr | filter:"o"')
+    let scope = {
+      arr:[{name:{name:'john',test:'Brown'}},
+          {name:{name:'jane',test:'Fox'}},
+          {name:{name:'Mary',test:'Quick'}},]
+    }
+    expect(fn(scope)).toEqual([
+          {name:{name:'john',test:'Brown'}},
+          {name:{name:'jane',test:'Fox'}}])
+  })
+
+  it('可以过滤长度不一的数组',()=>{
+    let fn = parse('arr | filter:"o"')
+    let scope = {
+      arr:[{name:'john',test:'Brown'},
+          {name:'jane'}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:'Brown'}])
+  })
+  it('用数字过滤',()=>{
+    let fn = parse('arr | filter:42')
+    let scope = {
+      arr:[{name:'john',test:42},
+          {name:'jane',test:43},
+          {name:'Mary',test:44}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:42}])
+  })
+  it('用布尔过滤',()=>{
+    let fn = parse('arr | filter:true')
+    let scope = {
+      arr:[{name:'john',test:true},
+          {name:'jane',test:false},
+          {name:'Mary',test:false}]
+    }
+    expect(fn(scope)).toEqual([
+          {name:'john',test:true}])
+  })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 })
