@@ -1563,8 +1563,11 @@ describe('Scope', () => {
 			});
 		});
 
-
-
+		it('监听静态constant类型的数据，一次后就清空了，因为不会变', function() {
+			scope.$watch('[1, 2, 3]', function() {});
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
 
 
 

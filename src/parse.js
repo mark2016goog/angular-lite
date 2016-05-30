@@ -34,12 +34,25 @@ const OPEARTORS = {
 let ifDefined = (value,defaultValue)=>{
   return typeof value==='undefined'?defaultValue:value
 }
+let constantWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
+  let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
+    if (_.isFunction(listenFn)) {
+      listenFn.apply(this,arguments)
+    };
+    unwatch()
+  },valueEq)
+  return unwatch
+}
 let parse = expr=>{
   switch(typeof expr){
     case 'string':
       let lexer = new Lexer()
-      let parse = new Parser(lexer)
-      return parse.parse(expr)
+      let parser = new Parser(lexer)
+      let parseFn = parser.parse(expr)
+      if (parseFn.constant) {
+        parseFn.$$watchDelegate = constantWatchDelegate;
+      };
+      return parseFn
     case 'function':
       return expr
     default:

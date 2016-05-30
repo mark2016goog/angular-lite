@@ -35,8 +35,12 @@ class Scope {
   }
   //  监听
   $watch(watchFn, listenerFn, valueEq) {
+    watchFn = parse(watchFn)
+    if (watchFn.$$watchDelegate) {
+      return watchFn.$$watchDelegate(this, listenerFn,valueEq,watchFn)
+    };
     const watcher = {
-      watchFn: parse(watchFn),
+      watchFn: watchFn,
       listenerFn: listenerFn || function() {},
       last: initWatchFn,
       valueEq: !!valueEq // 是否递归比较
