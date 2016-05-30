@@ -46,6 +46,86 @@ let parse = expr=>{
       return _.noop    
   }
 }
+let isLiteral = ast=>{
+  return ast.body.length===0||
+          ast.body.length===1&&(
+          ast.body[0].type===AST.Literal ||
+          ast.body[0].type===AST.ArrayExpression ||
+          ast.body[0].type===AST.ObjectExpression
+
+          )
+}
+let markConstantExpressions = ast=>{
+  let allConstants
+  switch(ast.type){
+    case AST.Literal:
+      ast.constant = true
+      break
+    case AST.Identifier:
+      ast.constant = false
+      break
+    case AST.ThisExpression:
+      ast.constant = false
+      break
+    case AST.MemberExpression:
+      markConstantExpressions(ast.object);
+
+      if (ast.computed) {
+        markConstantExpressions(ast.property);
+      };
+      ast.constant = ast.object.constant && (!ast.computed||ast.property.constant);
+      break
+    case AST.ArrayExpression:
+      allConstants = true
+      _.forEach(ast.elements,element=>{
+        markConstantExpressions(element)
+        allConstants = allConstants&&element.constant
+      })
+      ast.constant = allConstants
+      break
+    case AST.ObjectExpression:
+      allConstants = true
+      _.forEach(ast.properties,property=>{
+        markConstantExpressions(property.value)
+        allConstants = allConstants&&property.value.constant
+      })
+      ast.constant = allConstants
+      break
+    case AST.CallExpression:
+      // allConstants = a
+      allConstants = ast.filter?true:false
+      _.forEach(ast.arguments,argument=>{
+        markConstantExpressions(argument)
+        allConstants = allConstants&&argument.constant
+      })
+      ast.constant = allConstants
+      break
+    case AST.AssignmentExpression:
+      markConstantExpressions(ast.left)
+      markConstantExpressions(ast.right)
+      ast.constant = ast.left.constant&&ast.right.constant
+      break
+    case AST.UnaryExpression:
+      markConstantExpressions(ast.argument)
+      ast.constant = ast.argument.constant
+      break
+    case AST.BinartExpression:
+    case AST.LogicalExpression:
+      markConstantExpressions(ast.left)
+      markConstantExpressions(ast.right)
+      ast.constant = ast.left.constant&&ast.right.constant
+      break
+
+    case AST.Program:
+      allConstants = true
+      _.forEach(ast.body,expr=>{
+        markConstantExpressions(expr)
+        allConstants = allConstants&&expr.constant
+      })
+      ast.constant = allConstants
+      break
+  }
+}
 // 词法解析器a+b=> a,+,b
 class Lexer{
 	constructor(){
@@ -130,7 +210,6 @@ class Lexer{
 				// break
         let nextCh = this.peek()
         let prevCh = number.charAt(number.length-1)
-        // console.log(prevCh,ch,nextCh)
         if(ch==='e'&&this.isExpOperator(nextCh)){
           number += ch
         }else if(this.isExpOperator(ch)&&prevCh==='e'&&nextCh&&this.isNumber(nextCh)){
@@ -154,7 +233,6 @@ class Lexer{
     let string = ''
     let rawString = quote
     let escape = false
-    // console.log(quote)
     while(this.index<this.text.length){
       let ch = this.text.charAt(this.index)
       rawString +=ch
@@ -517,20 +595,23 @@ class ASTCompiler{
 	}
 	compile(text){
 		let ast = this.astBuilder.ast(text)
+
     // console.log(JSON.stringify(ast,null,2))
+    markConstantExpressions(ast)
     // vars需要用到的变量v0v1方便函数一开始就var定义好
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
     this.state = {body:[],nextId:0,vars:['_test_var'],filters:{}}
     this.recurse(ast)
-    // console.log(this.state)
     let fnString = this.filterPrefix()+
           'var fn = function(s,l){'+
           'var '+ this.state.vars.join(',')+' ;'+
           this.state.body.join('')+
           '};return fn;'
-      // console.log(fnString)
-    // console.log(this.state.body.join(''))
-    return new Function('ifDefined','filter',fnString)(ifDefined,filter)
+    let fn = new Function('ifDefined','filter',fnString)(ifDefined,filter)
+    // literal标明是不是一个字面量，不需要计算，比如数字 数字对象都算，但是1+2这种需要计算的就不是
+    fn.literal = isLiteral(ast)
+    fn.constant = ast.constant
+    return fn
 	}
   filterPrefix(){
     if (_.isEmpty(this.state.filters)) {
@@ -544,7 +625,6 @@ class ASTCompiler{
   }
   // create 赋值对象不存在 是不是创建
   recurse(ast, context,create){
-    // console.log(ast)
     let varid
     switch(ast.type){
       case AST.Program:
@@ -645,7 +725,6 @@ class ASTCompiler{
               callee = this.nonComputedMember(callContext.context,callContext.name)
             }
           };
-          // console.log(args)
           return callee+'&&'+callee+'('+args.join(',')+')'          
         }
         break
@@ -675,7 +754,6 @@ class ASTCompiler{
         varid = this.nextId()
         let testId = this.nextId()
         this.state.body.push(this.assign(testId, this.recurse(ast.test)))
-        // console.log(ast.consequent)
 
         this._if(testId, this.assign(varid, this.recurse(ast.consequent)))
 
@@ -743,7 +821,6 @@ class Parser{
 	}
 	parse(text){
     // return new Function('return '+text+';')
-    // console.log(text)
 		return this.astCompiler.compile(text)
 	}
 }

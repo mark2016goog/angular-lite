@@ -1,6 +1,5 @@
 let Filter =require('./filter')
-let filters = {}
-
+let _ = require('lodash')
 let comparator = (actual, expected)=>{
   if (_.isUndefined(actual)) {
     return false

@@ -1,6 +1,8 @@
 'use strict'
 
 const _ = require('lodash')
+const parse = require('./parse')
+
 const initWatchFn = () => {}
   //  防止object中有length属性
 const isArrayLike = obj => {
@@ -34,7 +36,7 @@ class Scope {
   //  监听
   $watch(watchFn, listenerFn, valueEq) {
     const watcher = {
-      watchFn: watchFn,
+      watchFn: parse(watchFn),
       listenerFn: listenerFn || function() {},
       last: initWatchFn,
       valueEq: !!valueEq // 是否递归比较
@@ -62,6 +64,8 @@ class Scope {
       //  有不同的，就+1外部$watch就能检测到变化
     let changeCount = 0
     let firstRun = true
+    // parse解析一下，支持表达式
+    watchFn = parse(watchFn)
     const internalWatchFn = scope => {
       newVal = watchFn(scope)
         //  也是操碎了心
@@ -235,6 +239,8 @@ class Scope {
     }
   }
   $eval(fn, arg) {
+    // parse一下，支持表达式，不写parse，就只支持函数，watch apply等一样
+    fn = parse(fn)
     return fn(this, arg)
   }
   $apply(fn) {

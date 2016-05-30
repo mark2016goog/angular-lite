@@ -227,7 +227,6 @@ describe('filter filter',()=>{
                 {name:{first:'jane'},role:'testo'}]
         }
         ])
-  // console.log(_)
 
   })
   it('只在一个level过滤', function() {
