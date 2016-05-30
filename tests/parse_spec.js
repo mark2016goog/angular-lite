@@ -1,6 +1,6 @@
 let parse = require('../src/parse')
 let _ = require('lodash')
-xdescribe('Parse', () => {
+describe('Parse', () => {
 describe('simple parse ',()=>{
 
   it('可以处理一个整数',()=>{
@@ -446,7 +446,17 @@ describe('处理变量和函数',()=>{
   // it('pars')
 })
 
+describe('结合parse和scope',()=>{
+  it('函数返回自己',()=>{
+    let fn = ()=>{}
+    expect(parse(fn)).toBe(fn)
+  })
+  it('没参数也返回一个函数',()=>{
+    // let fn = ()=>{}
+    expect(parse()).toEqual(jasmine.any(Function))
+  })
 
+})
   // console.log(fn.toString())
 
 

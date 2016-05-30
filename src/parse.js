@@ -35,9 +35,16 @@ let ifDefined = (value,defaultValue)=>{
   return typeof value==='undefined'?defaultValue:value
 }
 let parse = expr=>{
-	let lexer = new Lexer()
-	let parse = new Parser(lexer)
-	return parse.parse(expr)
+  switch(typeof expr){
+    case 'string':
+      let lexer = new Lexer()
+      let parse = new Parser(lexer)
+      return parse.parse(expr)
+    case 'function':
+      return expr
+    default:
+      return _.noop    
+  }
 }
 // 词法解析器a+b=> a,+,b
 class Lexer{
