@@ -1569,18 +1569,58 @@ describe('Scope', () => {
 			expect(scope.$$watchers.length).toBe(0);
 		});
 
-
-
-
-
-
-
-
-
-
-
-
-
+		it('::开头的变量，是单次绑定', function() {
+			var theValue;
+			scope.aValue = 42;
+			scope.$watch('::aValue', function(newValue, oldValue, scope) {
+				theValue = newValue;
+			});
+			scope.$digest();
+			expect(theValue).toBe(42);
+		});
+		it('单次绑定结束，就结束了', function() {
+			scope.aValue = 42;
+			scope.$watch('::aValue', function() {});
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
+		it('监听的值不是undefined的时候才移出', function() {
+			scope.$watch('::aValue', function() {});
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(1);
+			scope.aValue = 42;
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
+		it('单次绑定的必须稳定后才移出', function() {
+			scope.aValue = 42;
+			scope.$watch('::aValue', function() {});
+			var unwatchDeleter = scope.$watch('aValue', function() {
+				delete scope.aValue;
+			});
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(2);
+			scope.aValue = 42;
+			unwatchDeleter();
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
+		it('单次绑定复杂的数据结构--数组，所有的值都定义后才能移出', function() {
+			scope.$watch('::[1, 2, aValue]', function() {}, true);
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(1);
+			scope.aValue = 3;
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
+		it('单次绑定复杂的数据结构--对象，所有的值都定义后才能移出', function() {
+			scope.$watch('::{a: 1, b: aValue}', function() {}, true);
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(1);
+			scope.aValue = 3;
+			scope.$digest();
+			expect(scope.$$watchers.length).toBe(0);
+		});
 
 
 

@@ -35,23 +35,68 @@ let ifDefined = (value,defaultValue)=>{
   return typeof value==='undefined'?defaultValue:value
 }
 let constantWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
-  let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
+  let unwatch = scope.$watch(()=>watchFn(scope),(...args)=>{
     if (_.isFunction(listenFn)) {
-      listenFn.apply(this,arguments)
+      listenFn.apply(this,args)
     };
     unwatch()
   },valueEq)
   return unwatch
 }
+let oneTimeWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
+  let lastVal
+  let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
+    lastVal=newVal // newVal
+    if (_.isFunction(listenFn)) {
+      listenFn.apply(this,[newVal,oldVal,scope])
+    };
+    if (!_.isUndefined(newVal)) {
+      scope.$$postDigest(()=>{
+        if (!_.isUndefined(lastVal)) {
+          unwatch()
+        };
+      })
+    };
+  },valueEq)
+  return unwatch
+}
+
+let oneTimeLiteralWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
+  let isAllDefined = val=>!_.some(val,_.isUndefined)
+
+  let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
+    if (_.isFunction(listenFn)) {
+      listenFn.apply(this,[newVal,oldVal,scope])
+    };
+    if (isAllDefined(newVal)) {
+      scope.$$postDigest(()=>{
+        if (isAllDefined(newVal)) {
+          unwatch()
+        };
+      })
+
+    };
+  },valueEq)
+  return unwatch
+}
+
 let parse = expr=>{
   switch(typeof expr){
     case 'string':
       let lexer = new Lexer()
       let parser = new Parser(lexer)
+      let onetime = false
+      if (expr.charAt(0)===':'&&expr.charAt(1)===':') {
+        onetime = true
+        expr = expr.substring(2)
+      };
       let parseFn = parser.parse(expr)
       if (parseFn.constant) {
         parseFn.$$watchDelegate = constantWatchDelegate;
-      };
+      }else if(onetime){
+        parseFn.$$watchDelegate = parseFn.literal?oneTimeLiteralWatchDelegate:oneTimeWatchDelegate;
+
+      }
       return parseFn
     case 'function':
       return expr
