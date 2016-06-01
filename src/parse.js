@@ -191,7 +191,8 @@ class Lexer{
 	}
   // 解析
 	lex(text){
-		this.text = text
+    Object.assign(this,{text})
+		// this.text = text
 		this.index = 0
 		this.ch = undefined
 		this.tokens = []

@@ -15,7 +15,4 @@ let filter = name=>{
   return filters[name]
 }
 
-module.exports = {
-  register:register,
-  filter:filter
-}
+module.exports = {register,filter}
