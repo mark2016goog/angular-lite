@@ -428,7 +428,7 @@ class Scope {
       if (listeners[i]===null) {
         listeners.splice(i,1)
       }else{
-        listeners[i].apply(null, listenerArgs)
+        listeners[i](...listenerArgs)
         i++
       }
     }

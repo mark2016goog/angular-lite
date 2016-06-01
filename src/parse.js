@@ -37,7 +37,7 @@ let ifDefined = (value,defaultValue)=>{
 let constantWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
   let unwatch = scope.$watch(()=>watchFn(scope),(...args)=>{
     if (_.isFunction(listenFn)) {
-      listenFn.apply(this,args)
+      this::listenFn(...args)
     };
     unwatch()
   },valueEq)
@@ -48,7 +48,7 @@ let oneTimeWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
   let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
     lastVal=newVal // newVal
     if (_.isFunction(listenFn)) {
-      listenFn.apply(this,[newVal,oldVal,scope])
+      this::listenFn(newVal,oldVal,scope)
     };
     if (!_.isUndefined(newVal)) {
       scope.$$postDigest(()=>{
@@ -66,7 +66,7 @@ let oneTimeLiteralWatchDelegate = (scope, listenFn, valueEq,watchFn)=>{
 
   let unwatch = scope.$watch(()=>watchFn(scope),(newVal,oldVal,scope)=>{
     if (_.isFunction(listenFn)) {
-      listenFn.apply(this,[newVal,oldVal,scope])
+      this::listenFn(newVal,oldVal,scope)
     };
     if (isAllDefined(newVal)) {
       scope.$$postDigest(()=>{

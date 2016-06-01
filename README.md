@@ -8,6 +8,13 @@
 
 ## 语法
 * 使用es6尽可能多的语法
+    - 变量解构赋值
+    - class定义类，但是好像没法给原型赋属性
+    - 箭头函数，告别this=self
+    - ...arg代替apply，以及函数参数
+    - 合并数组 [...arr1, ...arr2, ...arr3]
+    - 用::和...args代替apply
+    - 
 
 ## 测试
 * karma+jasmine
