@@ -5,9 +5,32 @@ let setupModuleLoader = window=>{
     return obj[name]||(obj[name]=factory())
   }
   let angular = ensure(window,'angular',Object)
+  let createModule = (name,requires,modules)=>{
+    let moduleInstance = {
+      name:name,
+      requires:requires
+    }
+    modules[name] = moduleInstance
+    return moduleInstance
+  }
+  let getModule = (name,modules)=>{
+    if (name='hasOwnProperty') {
+      throw 'hasOwnProperty is not a valid module name'
+    };
+    if (modules.hasOwnProperty(name)) {
+      return modules[name]      
+    }else{
+      throw 'Module '+name+' is not exists'
+    }
+  }
   ensure(angular,'module',()=>{
-    return ()=>{
-      
+    let modules = {}
+    return (name,requires)=>{
+      if (requires) {
+        return createModule(name, requires,modules)
+      }else{
+        return getModule(name,modules)
+      }
     }
   })
 }
