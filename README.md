@@ -14,7 +14,6 @@
     - ...arg代替apply，以及函数参数
     - 合并数组 [...arr1, ...arr2, ...arr3]
     - 用::和...args代替apply
-    - 
 
 ## 测试
 * karma+jasmine
