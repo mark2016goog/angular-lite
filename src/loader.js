@@ -6,6 +6,9 @@ let setupModuleLoader = window=>{
   }
   let angular = ensure(window,'angular',Object)
   let createModule = (name,requires,modules)=>{
+    if (name==='hasOwnProperty') {
+      throw 'hasOwnProperty is not a valid module name'
+    };
     let moduleInstance = {
       name:name,
       requires:requires
@@ -14,9 +17,6 @@ let setupModuleLoader = window=>{
     return moduleInstance
   }
   let getModule = (name,modules)=>{
-    if (name='hasOwnProperty') {
-      throw 'hasOwnProperty is not a valid module name'
-    };
     if (modules.hasOwnProperty(name)) {
       return modules[name]      
     }else{

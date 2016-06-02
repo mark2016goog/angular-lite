@@ -56,7 +56,11 @@ describe('测试loader', () => {
         window.angular.module('myModule');
       }).toThrow();
     });
-
+    it('模块名不能使hasOwnProperty', function() {
+      expect(function() {
+        window.angular.module('hasOwnProperty', []);
+      }).toThrow();
+    });
 
 
   });
