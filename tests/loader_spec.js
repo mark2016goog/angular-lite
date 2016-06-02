@@ -61,9 +61,8 @@ describe('测试loader', () => {
         window.angular.module('hasOwnProperty', []);
       }).toThrow();
     });
-
-
   });
+
 
 
 
