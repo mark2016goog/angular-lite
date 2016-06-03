@@ -37,4 +37,52 @@ describe('测试injector', () => {
     var injector = createInjector(['myModule']);
     expect(injector.get('aConstant')).toBe(42);
   });
+  it('注入多个依赖', function() {
+    var module1 = angular.module('myModule', []);
+    var module2 = angular.module('myOtherModule', []);
+    module1.constant('aConstant', 42);
+    module2.constant('anotherConstant', 43);
+    var injector = createInjector(['myModule', 'myOtherModule']);
+    expect(injector.has('aConstant')).toBe(true);
+    expect(injector.has('anotherConstant')).toBe(true);
+  });
+  it('module第二个参数，支持注入依赖', function() {
+    var module1 = angular.module('myModule', []);
+    var module2 = angular.module('myOtherModule', ['myModule']);
+    module1.constant('aConstant', 42);
+    module2.constant('anotherConstant', 43);
+    var injector = createInjector(['myOtherModule']);
+    expect(injector.has('aConstant')).toBe(true);
+    expect(injector.has('anotherConstant')).toBe(true);
+  });
+  it('注入多个', function() {
+    var module1 = angular.module('myModule', []);
+    var module2 = angular.module('myOtherModule', ['myModule']);
+    var module3 = angular.module('myThirdModule', ['myOtherModule']);
+    module1.constant('aConstant', 42);
+    module2.constant('anotherConstant', 43);
+    module3.constant('aThirdConstant', 44);
+    var injector = createInjector(['myThirdModule']);
+    expect(injector.has('aConstant')).toBe(true);
+    expect(injector.has('anotherConstant')).toBe(true);
+    expect(injector.has('aThirdConstant')).toBe(true);
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 })

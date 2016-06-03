@@ -11,8 +11,9 @@ let createInjector = (modulesToLoad)=>{
     }
   }
 
-  _.forEach(modulesToLoad,moduleName=>{
+  _.forEach(modulesToLoad,function loadModule(moduleName){
     let module = angular.module(moduleName)
+    _.forEach(module.requires, loadModule)
     _.forEach(module._invokeQueue,invokeArgs=>{
       let method=invokeArgs[0]
       let args=invokeArgs[1]

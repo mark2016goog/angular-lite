@@ -1,4 +1,5 @@
 'use strict'
+import {createInjector} from './injector'
 
 let setupModuleLoader = window=>{
   let ensure = (obj, name, factory)=>{
