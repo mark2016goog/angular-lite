@@ -2,6 +2,7 @@
 
 let createInjector = (modulesToLoad)=>{
   let cache = {}
+  let loadModules = {}
   let $provide = {
     constant(key,value){
       if (key==='hasOwnProperty') {
@@ -12,13 +13,16 @@ let createInjector = (modulesToLoad)=>{
   }
 
   _.forEach(modulesToLoad,function loadModule(moduleName){
-    let module = angular.module(moduleName)
-    _.forEach(module.requires, loadModule)
-    _.forEach(module._invokeQueue,invokeArgs=>{
-      let method=invokeArgs[0]
-      let args=invokeArgs[1]
-      $provide[method](...args)
-    })
+    if (!loadModules[moduleName]) {
+      loadModules[moduleName] = true    
+      let module = angular.module(moduleName)
+      _.forEach(module.requires, loadModule)
+      _.forEach(module._invokeQueue,invokeArgs=>{
+        let method=invokeArgs[0]
+        let args=invokeArgs[1]
+        $provide[method](...args)
+      })
+    };
   })
   return {
     has(key){
