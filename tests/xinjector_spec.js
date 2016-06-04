@@ -68,9 +68,23 @@ describe('测试injector', () => {
     expect(injector.has('aThirdConstant')).toBe(true);
   });
 
+it('模块只注入加载一次', function() {
+angular.module('myModule', ['myOtherModule']);
+angular.module('myOtherModule', ['myModule']);
+createInjector(['myModule']);
 
 
+});
 
+it('$injector属性，和annotate', function() {
+var module = angular.module('myModule', []);
+module.constant('a', 1);
+module.constant('b', 2);
+var injector = createInjector(['myModule']);
+var fn = function(one, two) { return one + two; };
+fn.$inject = ['a', 'b'];
+expect(injector.invoke(fn)).toBe(3);
+});
 
 
 

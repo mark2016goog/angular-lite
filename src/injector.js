@@ -11,6 +11,10 @@ let createInjector = (modulesToLoad)=>{
       cache[key] = value
     }
   }
+  let invoke = (fn)=>{
+    let args = _.map(fn.$inject,token=>cache[token])
+    return fn(...args)
+  }
 
   _.forEach(modulesToLoad,function loadModule(moduleName){
     if (!loadModules[moduleName]) {
@@ -30,7 +34,8 @@ let createInjector = (modulesToLoad)=>{
     },
     get(key){
       return cache[key]
-    }
+    },
+    invoke:invoke
   }
 }
 
