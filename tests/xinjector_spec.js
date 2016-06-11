@@ -1,7 +1,11 @@
 'use strict'
 
-import {setupModuleLoader} from '../src/loader'
-import {createInjector} from '../src/injector'
+import {
+  setupModuleLoader
+} from '../src/loader'
+import {
+  createInjector
+} from '../src/injector'
 describe('测试injector', () => {
   beforeEach(function() {
     delete window.angular;
@@ -68,34 +72,87 @@ describe('测试injector', () => {
     expect(injector.has('aThirdConstant')).toBe(true);
   });
 
-it('模块只注入加载一次', function() {
-angular.module('myModule', ['myOtherModule']);
-angular.module('myOtherModule', ['myModule']);
-createInjector(['myModule']);
+  it('模块只注入加载一次', function() {
+    angular.module('myModule', ['myOtherModule']);
+    angular.module('myOtherModule', ['myModule']);
+    createInjector(['myModule']);
 
 
+  });
+
+  it('$injector属性，和annotate', function() {
+    var module = angular.module('myModule', []);
+    module.constant('a', 1);
+    module.constant('b', 2);
+    var injector = createInjector(['myModule']);
+    var fn = function(one, two) {
+      return one + two;
+    };
+    fn.$inject = ['a', 'b'];
+    expect(injector.invoke(fn)).toBe(3);
+  });
+  it('注入数字会报错', function() {
+    var module = angular.module('myModule', []);
+    module.constant('a', 1);
+    var injector = createInjector(['myModule']);
+    var fn = function(one, two) {
+      return one + two;
+    };
+    fn.$inject = ['a', 2];
+    expect(function() {
+      injector.invoke(fn);
+    }).toThrow();
+  });
+
+  it('保持上下文', function() {
+    var module = angular.module('myModule', []);
+    module.constant('a', 1);
+    var injector = createInjector(['myModule']);
+    var obj = {
+      two: 2,
+      fn: function(one) {
+        return one + this.two;
+      }
+    };
+    obj.fn.$inject = ['a'];
+    expect(injector.invoke(obj.fn, obj)).toBe(3);
+  });
+
+  it('invoke第三个参数，会覆盖掉依赖注入', function() {
+    var module = angular.module('myModule', []);
+    module.constant('a', 1);
+    module.constant('b', 2);
+    var injector = createInjector(['myModule']);
+    var fn = function(one, two) {
+      return one + two;
+    };
+    fn.$inject = ['a', 'b'];
+    expect(injector.invoke(fn, undefined, {
+      b: 3
+    })).toBe(4);
+  });
+
+  describe('annotate', function() {
+    it('annotate函数获取依赖注入', function() {
+      var injector = createInjector([]);
+      var fn = function() {};
+      fn.$inject = ['a', 'b'];
+      expect(injector.annotate(fn)).toEqual(['a', 'b']);
+    });
+it('annotate形式写法', function() {
+var injector = createInjector([]);
+var fn = ['a', 'b', function() { }];
+expect(injector.annotate(fn)).toEqual(['a', 'b']);
 });
 
-it('$injector属性，和annotate', function() {
-var module = angular.module('myModule', []);
-module.constant('a', 1);
-module.constant('b', 2);
-var injector = createInjector(['myModule']);
-var fn = function(one, two) { return one + two; };
-fn.$inject = ['a', 'b'];
-expect(injector.invoke(fn)).toBe(3);
+it('returns an empty array for a non-annotated 0-arg function', function() {
+var injector = createInjector([]);
+var fn = function() { };
+expect(injector.annotate(fn)).toEqual([]);
 });
 
 
-
-
-
-
-
-
-
-
-
+  });
 
 
 

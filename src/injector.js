@@ -11,9 +11,30 @@ let createInjector = (modulesToLoad)=>{
       cache[key] = value
     }
   }
-  let invoke = (fn)=>{
-    let args = _.map(fn.$inject,token=>cache[token])
-    return fn(...args)
+  let annotate = fn => {
+    if (_.isArray(fn)) {
+      return _.initial(fn)
+    }else if(fn.$inject){
+      return fn.$inject
+
+    }else{
+      return []
+    }
+  }
+  let invoke = (fn, self, locals) => {
+    let args = _.map(fn.$inject, token => {
+      if (_.isString(token)) {
+        return locals&&locals.hasOwnProperty(token)?
+                  locals[token]:
+                  cache[token]
+
+      } else {
+        throw 'token expected a string!'
+      }
+
+    })
+    return self::fn(...args)
+
   }
 
   _.forEach(modulesToLoad,function loadModule(moduleName){
@@ -35,7 +56,8 @@ let createInjector = (modulesToLoad)=>{
     get(key){
       return cache[key]
     },
-    invoke:invoke
+    invoke:invoke,
+    annotate:annotate
   }
 }
 
