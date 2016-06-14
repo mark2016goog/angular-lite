@@ -385,7 +385,7 @@ describe('测试injector', () => {
       var injector = createInjector(['myModule']);
       expect(injector.get('a')).toBe(42);
     });
-    xit('allows injecting the instance injector to $get', function() {
+    it('allows injecting the instance injector to $get', function() {
       var module = angular.module('myModule', []);
       module.constant('a', 42);
       module.provider('b', function BProvider() {

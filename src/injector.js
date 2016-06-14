@@ -25,7 +25,7 @@ let createInjector = (modulesToLoad) => {
   let providerInjector = createInternalInjector(providerCache, name => {
     throw 'unknow provider' + name
   })
-  let instanceInjector = createInternalInjector(instanceCache, name => {
+  let instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, name => {
     var provider = providerInjector.get(name + 'Provider');
     return instanceInjector.invoke(provider.$get, provider);
   });
