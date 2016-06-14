@@ -139,21 +139,267 @@ describe('测试injector', () => {
       fn.$inject = ['a', 'b'];
       expect(injector.annotate(fn)).toEqual(['a', 'b']);
     });
-it('annotate形式写法', function() {
-var injector = createInjector([]);
-var fn = ['a', 'b', function() { }];
-expect(injector.annotate(fn)).toEqual(['a', 'b']);
-});
+    it('annotate形式写法', function() {
+      var injector = createInjector([]);
+      var fn = ['a', 'b', function() {}];
+      expect(injector.annotate(fn)).toEqual(['a', 'b']);
+    });
 
-it('returns an empty array for a non-annotated 0-arg function', function() {
-var injector = createInjector([]);
-var fn = function() { };
-expect(injector.annotate(fn)).toEqual([]);
-});
+    it('函数没有参数，注入就是空数组', function() {
+      var injector = createInjector([]);
+      var fn = function() {};
+      expect(injector.annotate(fn)).toEqual([]);
+    });
+    it('能从参数里解析出依赖', function() {
+      var injector = createInjector([]);
+      var fn = function(a, b) {};
+      expect(injector.annotate(fn)).toEqual(['a', 'b']);
+    });
+    it('数组annotate', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.constant('b', 2);
+      var injector = createInjector(['myModule']);
+      var fn = ['a', 'b', function(one, two) {
+        return one + two;
+      }];
+      expect(injector.invoke(fn)).toBe(3);
+    });
+    it('invokes a non-annotated function with dependency injection', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.constant('b', 2);
+      var injector = createInjector(['myModule']);
+      var fn = function(a, b) {
+        return a + b;
+      };
+      expect(injector.invoke(fn)).toBe(3);
+    });
+    it('instantiates an annotated constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.constant('b', 2);
+      var injector = createInjector(['myModule']);
 
+      function Type(one, two) {
+        this.result = one + two;
+      }
+      Type.$inject = ['a', 'b'];
+      var instance = injector.instantiate(Type);
+      expect(instance.result).toBe(3);
+    });
 
+    it('instantiates an array-annotated constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.constant('b', 2);
+      var injector = createInjector(['myModule']);
+
+      function Type(one, two) {
+        this.result = one + two;
+      }
+      var instance = injector.instantiate(['a', 'b', Type]);
+      expect(instance.result).toBe(3);
+    });
+    it('instantiates a non-annotated constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.constant('b', 2);
+      var injector = createInjector(['myModule']);
+
+      function Type(a, b) {
+        this.result = a + b;
+      }
+      var instance = injector.instantiate(Type);
+      expect(instance.result).toBe(3);
+    });
   });
+  describe('provider', () => {
+    it('provicer方法要有一个$get方法', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', {
+        $get: function() {
+          return 42;
+        }
+      });
+      // module.constant('a',42)
+      var injector = createInjector(['myModule']);
+      expect(injector.has('a')).toBe(true);
+      expect(injector.get('a')).toBe(42);
+    });
+    it('injects the $get method of a provider', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 1);
+      module.provider('b', {
+        $get: function(a) {
+          return a + 2;
+        }
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('b')).toBe(3);
+    });
 
+    it('$get懒执行', function() {
+      var module = angular.module('myModule', []);
+      module.provider('b', {
+        $get: function(a) {
+          return a + 2;
+        }
+      });
+      module.provider('a', {
+        $get: _.constant(1)
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('b')).toBe(3);
+    });
+    it('依赖只会被实例化一次', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', {
+        $get: function() {
+          return {};
+        }
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(injector.get('a'));
+    });
+    it('不允许循环依赖', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', {
+        $get: function(b) {}
+      });
+      module.provider('b', {
+        $get: function(c) {}
+      });
+      module.provider('c', {
+        $get: function(a) {}
+      });
+      var injector = createInjector(['myModule']);
+      expect(function() {
+        injector.get('a');
+      }).toThrowError(/Circular dependency found/);
+    });
+    it('instantiates a provider if given as a constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function() {
+          return 42;
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(42);
+    });
+    it('injects the given provider constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.constant('b', 2);
+      module.provider('a', function AProvider(b) {
+        this.$get = function() {
+          return 1 + b;
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(3);
+    });
+    it('provider可配置', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        var value = 1;
+        this.setValue = function(v) {
+          value = v;
+        };
+        this.$get = function() {
+          return value;
+        };
+      });
+      module.provider('b', function BProvider(aProvider) {
+        aProvider.setValue(2);
+        this.$get = function() {};
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(2);
+    });
+    it('does not inject an instance to a provider constructor function', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function() {
+          return 1;
+        };
+      });
+      module.provider('b', function BProvider(a) {
+        this.$get = function() {
+          return a;
+        };
+      });
+      expect(function() {
+        createInjector(['myModule']);
+      }).toThrow();
+    });
+    it('does not inject a provider to a $get function', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function() {
+          return 1;
+        };
+      });
+      module.provider('b', function BProvider() {
+        this.$get = function(aProvider) {
+          return aProvider.$get();
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(function() {
+        injector.get('b');
+      }).toThrow();
+    });
+    it('does not inject a provider to invoke', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function() {
+          return 1;
+        }
+      });
+      var injector = createInjector(['myModule']);
+      expect(function() {
+        injector.invoke(function(aProvider) {});
+      }).toThrow();
+    });
+    it('does not give access to providers through get', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function() {
+          return 1;
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(function() {
+        injector.get('aProvider');
+      }).toThrow();
+    });
+    it('优先实例化constant', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider(b) {
+        this.$get = function() {
+          return b;
+        };
+      });
+      module.constant('b', 42);
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(42);
+    });
+    xit('allows injecting the instance injector to $get', function() {
+      var module = angular.module('myModule', []);
+      module.constant('a', 42);
+      module.provider('b', function BProvider() {
+        this.$get = function($injector) {
+          return $injector.get('a');
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('b')).toBe(42);
+    });
+
+
+
+  })
 
 
 })

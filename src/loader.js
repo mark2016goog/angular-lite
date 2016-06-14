@@ -11,12 +11,19 @@ let setupModuleLoader = window=>{
       throw 'hasOwnProperty is not a valid module name'
     };
     let invokeQueue = []
+    let invokeLater = (method,arrMethod)=>{
+      return (...args)=>{
+        invokeQueue[arrMethod||'push']([method,args])
+        // console.log(JSON.stringify(invokeQueue,null,2))
+        return moduleInstance
+      }
+    }
+
     let moduleInstance = {
       name:name,
       requires:requires,
-      constant:(key,value)=>{
-        invokeQueue.push(['constant',[key,value]])
-      },
+      constant:invokeLater('constant','unshift'),
+      provider:invokeLater('provider'),
       _invokeQueue:invokeQueue
     }
     modules[name] = moduleInstance
