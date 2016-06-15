@@ -111,8 +111,6 @@ function createInjector(modulesToLoad) {
       service[method].apply(service,args)
     })
   }
-
-
   _.forEach(modulesToLoad, function loadModule(moduleName) {
     if (!loadModules[moduleName]) {
       loadModules[moduleName] = true
@@ -120,11 +118,9 @@ function createInjector(modulesToLoad) {
       _.forEach(module.requires, loadModule)
       runInvokeQueue(module. _invokeQueue)
       runInvokeQueue(module._configBlocks)
-      // _.forEach(module._invokeQueue, invokeArgs => {
-      //   let method = invokeArgs[0]
-      //   let args = invokeArgs[1]
-      //   providerCache.$provide[method](...args)
-      // })
+      _.forEach(module._runBlocks,runBlock=>{
+        instanceInjector.invoke(runBlock)
+      })
     };
   })
   return instanceInjector

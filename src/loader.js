@@ -6,7 +6,7 @@ let setupModuleLoader = window=>{
     return obj[name]||(obj[name]=factory())
   }
   let angular = ensure(window,'angular',Object)
-  function createModule(name,requires,modules){
+  function createModule(name,requires,modules,configFn){
     if (name==='hasOwnProperty') {
       throw 'hasOwnProperty is not a valid module name'
     };
@@ -26,9 +26,18 @@ let setupModuleLoader = window=>{
       constant:invokeLater('$provide','constant','unshift'),
       provider:invokeLater('$provide','provider'),
       config:invokeLater('$injector','invoke','push',configBlocks),
+      run:function(fn){
+        moduleInstance._runBlocks.push(fn)
+        return moduleInstance
+      },
       _invokeQueue:invokeQueue,
-      _configBlocks:configBlocks
+      _configBlocks:configBlocks,
+      _runBlocks:[]
     }
+    if (configFn) {
+      moduleInstance.config(configFn)
+    };
+
     modules[name] = moduleInstance
     return moduleInstance
   }
@@ -41,9 +50,9 @@ let setupModuleLoader = window=>{
   }
   ensure(angular,'module',()=>{
     let modules = {}
-    return (name,requires)=>{
+    return (name,requires, configFn)=>{
       if (requires) {
-        return createModule(name, requires,modules)
+        return createModule(name, requires,modules,configFn)
       }else{
         return getModule(name,modules)
       }

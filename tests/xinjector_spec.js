@@ -434,7 +434,7 @@ describe('测试injector', () => {
         injector.get('a');
       }).toThrow();
     });
-    it('runs config blocks when the injector is created', function() {
+    it('创建injector的时候就执行config', function() {
       var module = angular.module('myModule', []);
       var hasRun = false;
       module.config(function() {
@@ -460,23 +460,40 @@ describe('测试injector', () => {
       var injector = createInjector(['myModule']);
       expect(injector.get('a')).toBe(42);
     });
+    it('runs a config block added during module registration', function() {
+      var module = angular.module('myModule', [], function($provide) {
+        $provide.constant('a', 42);
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(42);
+    });
 
-
-
-
-
-
-
-
-
-
-
-
-
+  })
+  describe('run block', () => {
+    it('runs run blocks when the injector is created', function() {
+      var module = angular.module('myModule', []);
+      var hasRun = false;
+      module.run(function() {
+        hasRun = true;
+      });
+      createInjector(['myModule']);
+      expect(hasRun).toBe(true);
+    });
+    it('injects run blocks with the instance injector', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', {
+        $get: _.constant(42)
+      });
+      var gotA;
+      module.run(function(a) {
+        gotA = a;
+      });
+      createInjector(['myModule']);
+      expect(gotA).toBe(42);
+    });
 
 
 
   })
-
 
 })
