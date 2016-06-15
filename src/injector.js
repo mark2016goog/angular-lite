@@ -113,14 +113,19 @@ function createInjector(modulesToLoad) {
   }
   let runBlocks = []
   _.forEach(modulesToLoad, function loadModule(moduleName) {
-    if (!loadModules[moduleName]) {
-      loadModules[moduleName] = true
-      let module = angular.module(moduleName)
-      _.forEach(module.requires, loadModule)
-      runInvokeQueue(module. _invokeQueue)
-      runInvokeQueue(module._configBlocks)
-      runBlocks = runBlocks.concat(module._runBlocks)
-    };
+    if (_.isString(moduleName)) {
+      if (!loadModules[moduleName]) {
+        loadModules[moduleName] = true
+        let module = angular.module(moduleName)
+        _.forEach(module.requires, loadModule)
+        runInvokeQueue(module. _invokeQueue)
+        runInvokeQueue(module._configBlocks)
+        runBlocks = runBlocks.concat(module._runBlocks)
+      }
+    }else if(_.isFunction(moduleName)||_.isArray(moduleName)){
+        providerInjector.invoke(moduleName)
+    }
+
   })
   _.forEach(runBlocks,runBlock=>{
     instanceInjector.invoke(runBlock)
