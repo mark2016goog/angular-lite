@@ -22,8 +22,8 @@ let createInjector = (modulesToLoad) => {
         // cache[key] = invoke(proObj.$get,proObj)
     }
   }
-  let providerInjector = createInternalInjector(providerCache, name => {
-    throw 'unknow provider' + name
+  let providerInjector =providerCache.$injector = createInternalInjector(providerCache, name => {
+    throw 'unknow provider ' + name
   })
   let instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, name => {
     var provider = providerInjector.get(name + 'Provider');
@@ -54,7 +54,7 @@ let createInjector = (modulesToLoad) => {
         // return instance
       }
     }
-    let invoke = (fn, self, locals) => {
+    function invoke(fn, self, locals){
       let args = _.map(annotate(fn), token => {
         if (_.isString(token)) {
           return locals && locals.hasOwnProperty(token) ? locals[token] : getService(token)
@@ -69,13 +69,13 @@ let createInjector = (modulesToLoad) => {
       return self::fn(...args)
     }
 
-    let instantiate = (Type, locals)=>{
+    function instantiate(Type, locals){
       var UnwrappedType = _.isArray(Type) ? _.last(Type) : Type;
       var instance = Object.create(UnwrappedType.prototype);
       invoke(Type, instance, locals);
       return instance;
     }
-  let annotate = fn => {
+  function annotate (fn){
     // console.log(fn)
     if (_.isArray(fn)) {
       return _.initial(fn)
