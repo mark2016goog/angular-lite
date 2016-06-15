@@ -2,11 +2,12 @@
 
 const FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
 let INSTANTIATING = {}
-let createInjector = (modulesToLoad) => {
+
+function createInjector(modulesToLoad) {
   let instanceCache = {}
   let providerCache = {}
   let loadModules = {}
-  let $provide = {
+  providerCache.$provide = {
     constant(key, value) {
       if (key === 'hasOwnProperty') {
         throw 'hasOwnProperty is not a avalid constant name'
@@ -22,7 +23,7 @@ let createInjector = (modulesToLoad) => {
         // cache[key] = invoke(proObj.$get,proObj)
     }
   }
-  let providerInjector =providerCache.$injector = createInternalInjector(providerCache, name => {
+  let providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {
     throw 'unknow provider ' + name
   })
   let instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, name => {
@@ -54,7 +55,8 @@ let createInjector = (modulesToLoad) => {
         // return instance
       }
     }
-    function invoke(fn, self, locals){
+
+    function invoke(fn, self, locals) {
       let args = _.map(annotate(fn), token => {
         if (_.isString(token)) {
           return locals && locals.hasOwnProperty(token) ? locals[token] : getService(token)
@@ -69,26 +71,27 @@ let createInjector = (modulesToLoad) => {
       return self::fn(...args)
     }
 
-    function instantiate(Type, locals){
+    function instantiate(Type, locals) {
       var UnwrappedType = _.isArray(Type) ? _.last(Type) : Type;
       var instance = Object.create(UnwrappedType.prototype);
       invoke(Type, instance, locals);
       return instance;
     }
-  function annotate (fn){
-    // console.log(fn)
-    if (_.isArray(fn)) {
-      return _.initial(fn)
-    } else if (fn.$inject) {
-      return fn.$inject
 
-    } else if (!fn.length) {
-      return []
-    } else {
-      var argDeclaration = fn.toString().match(FN_ARGS);
-      return argDeclaration[1].replace(' ', '').split(',')
+    function annotate(fn) {
+      // console.log(fn)
+      if (_.isArray(fn)) {
+        return _.initial(fn)
+      } else if (fn.$inject) {
+        return fn.$inject
+
+      } else if (!fn.length) {
+        return []
+      } else {
+        var argDeclaration = fn.toString().match(FN_ARGS);
+        return argDeclaration[1].replace(' ', '').split(',')
+      }
     }
-  }
     return {
       has(key) {
         return cache.hasOwnProperty(key) || providerCache.hasOwnProperty(key + 'Provider')
@@ -100,8 +103,14 @@ let createInjector = (modulesToLoad) => {
     }
 
   }
-
-
+  function runInvokeQueue(queue){
+    _.forEach(queue, invokeArgs=>{
+      let service = providerInjector.get(invokeArgs[0])
+      let method = invokeArgs[1]
+      let args = invokeArgs[2]
+      service[method].apply(service,args)
+    })
+  }
 
 
   _.forEach(modulesToLoad, function loadModule(moduleName) {
@@ -109,12 +118,13 @@ let createInjector = (modulesToLoad) => {
       loadModules[moduleName] = true
       let module = angular.module(moduleName)
       _.forEach(module.requires, loadModule)
-      _.forEach(module._invokeQueue, invokeArgs => {
-        let method = invokeArgs[0]
-        let args = invokeArgs[1]
-          // console.log(method,args)
-        $provide[method](...args)
-      })
+      runInvokeQueue(module. _invokeQueue)
+      runInvokeQueue(module._configBlocks)
+      // _.forEach(module._invokeQueue, invokeArgs => {
+      //   let method = invokeArgs[0]
+      //   let args = invokeArgs[1]
+      //   providerCache.$provide[method](...args)
+      // })
     };
   })
   return instanceInjector

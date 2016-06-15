@@ -413,6 +413,67 @@ describe('测试injector', () => {
       var injector = createInjector(['myModule']);
       expect(injector.get('b')).toBe(42);
     });
+    it('allows injecting the $provide service to providers', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider($provide) {
+        $provide.constant('b', 2);
+        this.$get = function(b) {
+          return 1 + b;
+        };
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(3);
+    });
+    it('does not allow injecting the $provide service to $get', function() {
+      var module = angular.module('myModule', []);
+      module.provider('a', function AProvider() {
+        this.$get = function($provide) {};
+      });
+      var injector = createInjector(['myModule']);
+      expect(function() {
+        injector.get('a');
+      }).toThrow();
+    });
+    it('runs config blocks when the injector is created', function() {
+      var module = angular.module('myModule', []);
+      var hasRun = false;
+      module.config(function() {
+        hasRun = true;
+      });
+      createInjector(['myModule']);
+      expect(hasRun).toBe(true);
+    });
+    it('injects config blocks with provider injector', function() {
+      var module = angular.module('myModule', []);
+      module.config(function($provide) {
+        $provide.constant('a', 42);
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(42);
+    });
+    it('allows registering config blocks before providers', function() {
+      var module = angular.module('myModule', []);
+      module.config(function(aProvider) {});
+      module.provider('a', function() {
+        this.$get = _.constant(42);
+      });
+      var injector = createInjector(['myModule']);
+      expect(injector.get('a')).toBe(42);
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   })

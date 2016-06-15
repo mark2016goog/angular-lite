@@ -2,18 +2,19 @@
 import {createInjector} from './injector'
 
 let setupModuleLoader = window=>{
-  let ensure = (obj, name, factory)=>{
+  function ensure(obj, name, factory){
     return obj[name]||(obj[name]=factory())
   }
   let angular = ensure(window,'angular',Object)
-  let createModule = (name,requires,modules)=>{
+  function createModule(name,requires,modules){
     if (name==='hasOwnProperty') {
       throw 'hasOwnProperty is not a valid module name'
     };
     let invokeQueue = []
-    let invokeLater = (method,arrMethod)=>{
+    let configBlocks = []
+    function invokeLater(service, method,arrMethod,queue=invokeQueue){
       return (...args)=>{
-        invokeQueue[arrMethod||'push']([method,args])
+        queue[arrMethod||'push']([service, method,args])
         // console.log(JSON.stringify(invokeQueue,null,2))
         return moduleInstance
       }
@@ -22,14 +23,16 @@ let setupModuleLoader = window=>{
     let moduleInstance = {
       name:name,
       requires:requires,
-      constant:invokeLater('constant','unshift'),
-      provider:invokeLater('provider'),
-      _invokeQueue:invokeQueue
+      constant:invokeLater('$provide','constant','unshift'),
+      provider:invokeLater('$provide','provider'),
+      config:invokeLater('$injector','invoke','push',configBlocks),
+      _invokeQueue:invokeQueue,
+      _configBlocks:configBlocks
     }
     modules[name] = moduleInstance
     return moduleInstance
   }
-  let getModule = (name,modules)=>{
+  function getModule(name,modules){
     if (modules.hasOwnProperty(name)) {
       return modules[name]      
     }else{
