@@ -1,5 +1,5 @@
 'use strict'
-
+// 其实用es6的map即可，这个代码纯玩
 
 function hashKey(value){
   let type=typeof value

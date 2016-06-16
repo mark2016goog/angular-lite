@@ -1,6 +1,6 @@
 'use strict'
 
-import {HashMap} from './apis'
+// import {HashMap} from './apis'
 
 const FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
 let INSTANTIATING = {}
@@ -8,7 +8,7 @@ let INSTANTIATING = {}
 function createInjector(modulesToLoad) {
   let instanceCache = {}
   let providerCache = {}
-  let loadModules = new HashMap()
+  let loadModules = new Map()
   providerCache.$provide = {
     constant(key, value) {
       if (key === 'hasOwnProperty') {
@@ -22,7 +22,9 @@ function createInjector(modulesToLoad) {
         proObj = providerInjector.instantiate(proObj)
       };
       providerCache[key + 'Provider'] = proObj
-        // cache[key] = invoke(proObj.$get,proObj)
+    },
+    factory(key, factoryFn){
+      this.provider(key, {$get:factoryFn})
     }
   }
   let providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {
@@ -117,7 +119,7 @@ function createInjector(modulesToLoad) {
   _.forEach(modulesToLoad, function loadModule(moduleName) {
     if (_.isString(moduleName)) {
       if (!loadModules.get(moduleName)) {
-        loadModules.put(moduleName,true) 
+        loadModules.set(moduleName,true) 
         let module = angular.module(moduleName)
         _.forEach(module.requires, loadModule)
         runInvokeQueue(module. _invokeQueue)

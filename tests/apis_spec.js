@@ -1,5 +1,6 @@
 import {
-  hashKey,HashMap
+  hashKey,
+  HashMap
 } from '../src/apis'
 
 
@@ -98,30 +99,19 @@ describe('apis', function() {
       map.put(42, 'fourty two');
       expect(map.get(42)).toEqual('fourty two');
     });
-it('supports remove', function() {
-var map = new HashMap();
-map.put(42, 'fourty two');
-map.remove(42);
-expect(map.get(42)).toBeUndefined();
-});
-it('returns value from remove', function() {
-var map = new HashMap();
-map.put(42, 'fourty two');
-expect(map.remove(42)).toEqual('fourty two');
-});
+    it('supports remove', function() {
+      var map = new HashMap();
+      map.put(42, 'fourty two');
+      map.remove(42);
+      expect(map.get(42)).toBeUndefined();
+    });
+    it('returns value from remove', function() {
+      var map = new HashMap();
+      map.put(42, 'fourty two');
+      expect(map.remove(42)).toEqual('fourty two');
+    });
     
   });
-
-
-
-
-
-
-
-
-
-
-
 
 
 
