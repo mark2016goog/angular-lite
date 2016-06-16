@@ -35,6 +35,15 @@ function createInjector(modulesToLoad) {
     },
     value(key,val){
       this.factory(key,()=>val)
+    },
+    decorator(serviceName, decoratorFn){
+      let provider = providerInjector.get(serviceName+'Provider')
+      let originGet = provider.$get
+      provider.$get = ()=>{
+        let instance = instanceInjector.invoke(originGet,provider)
+        instanceInjector.invoke(decoratorFn,null,{$delegate:instance})
+        return instance
+      }
     }
   }
   let providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {

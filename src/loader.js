@@ -27,6 +27,7 @@ let setupModuleLoader = window=>{
       provider:invokeLater('$provide','provider'),
       factory:invokeLater('$provide','factory'),
       service:invokeLater('$provide','service'),
+      decorator:invokeLater('$provide','decorator'),
       value:invokeLater('$provide','value'),
       config:invokeLater('$injector','invoke','push',configBlocks),
       run:function(fn){
