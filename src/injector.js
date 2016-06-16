@@ -123,7 +123,7 @@ function createInjector(modulesToLoad) {
         runBlocks = runBlocks.concat(module._runBlocks)
       }
     }else if(_.isFunction(moduleName)||_.isArray(moduleName)){
-        res = providerInjector.invoke(moduleName)
+        let res = providerInjector.invoke(moduleName)
         res&&runBlocks.push(res)
     }
 
