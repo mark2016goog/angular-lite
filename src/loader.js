@@ -26,6 +26,7 @@ let setupModuleLoader = window=>{
       constant:invokeLater('$provide','constant','unshift'),
       provider:invokeLater('$provide','provider'),
       factory:invokeLater('$provide','factory'),
+      service:invokeLater('$provide','service'),
       value:invokeLater('$provide','value'),
       config:invokeLater('$injector','invoke','push',configBlocks),
       run:function(fn){

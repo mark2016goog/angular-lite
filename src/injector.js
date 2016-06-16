@@ -28,6 +28,11 @@ function createInjector(modulesToLoad) {
         $get: factoryFn
       })
     },
+    service(key,consturtor){
+      this.factory(key,()=>{
+        return instanceInjector.instantiate(consturtor)
+      })
+    },
     value(key,val){
       this.factory(key,()=>val)
     }
