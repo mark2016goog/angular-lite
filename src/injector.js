@@ -23,8 +23,13 @@ function createInjector(modulesToLoad) {
       };
       providerCache[key + 'Provider'] = proObj
     },
-    factory(key, factoryFn){
-      this.provider(key, {$get:factoryFn})
+    factory(key, factoryFn) {
+      this.provider(key, {
+        $get: factoryFn
+      })
+    },
+    value(key,val){
+      this.factory(key,()=>val)
     }
   }
   let providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {
@@ -107,32 +112,35 @@ function createInjector(modulesToLoad) {
     }
 
   }
-  function runInvokeQueue(queue){
-    _.forEach(queue, invokeArgs=>{
+
+  function runInvokeQueue(queue) {
+    _.forEach(queue, invokeArgs => {
       let service = providerInjector.get(invokeArgs[0])
       let method = invokeArgs[1]
       let args = invokeArgs[2]
-      service[method].apply(service,args)
+      service[method].apply(service, args)
     })
   }
   let runBlocks = []
   _.forEach(modulesToLoad, function loadModule(moduleName) {
-    if (_.isString(moduleName)) {
-      if (!loadModules.get(moduleName)) {
-        loadModules.set(moduleName,true) 
+    if (!loadModules.get(moduleName)) {
+      loadModules.set(moduleName, true)
+      if (_.isString(moduleName)) {
         let module = angular.module(moduleName)
         _.forEach(module.requires, loadModule)
-        runInvokeQueue(module. _invokeQueue)
+        runInvokeQueue(module._invokeQueue)
         runInvokeQueue(module._configBlocks)
         runBlocks = runBlocks.concat(module._runBlocks)
-      }
-    }else if(_.isFunction(moduleName)||_.isArray(moduleName)){
+
+      } else if (_.isFunction(moduleName) || _.isArray(moduleName)) {
         let res = providerInjector.invoke(moduleName)
-        res&&runBlocks.push(res)
+        res && runBlocks.push(res)
+      }
+
     }
 
   })
-  _.forEach(runBlocks,runBlock=>{
+  _.forEach(runBlocks, runBlock => {
     instanceInjector.invoke(runBlock)
   })
 
