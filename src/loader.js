@@ -1,7 +1,7 @@
 'use strict'
 import {createInjector} from './injector'
 
-let setupModuleLoader = window=>{
+function setupModuleLoader(window){
   function ensure(obj, name, factory){
     return obj[name]||(obj[name]=factory())
   }
@@ -29,6 +29,7 @@ let setupModuleLoader = window=>{
       service:invokeLater('$provide','service'),
       decorator:invokeLater('$provide','decorator'),
       value:invokeLater('$provide','value'),
+      filter: invokeLater('$filterProvider', 'register'),
       config:invokeLater('$injector','invoke','push',configBlocks),
       run:function(fn){
         moduleInstance._runBlocks.push(fn)

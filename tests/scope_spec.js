@@ -1,12 +1,19 @@
-let Scope = require('../src/scope')
 let _ = require('lodash')
-describe('Scope', () => {
-	let scope
-	beforeEach(() => {
-		scope = new Scope()
-	})
-	describe('digest', () => {
+import {
+	publishExternalAPI
+} from '../src/angular_public'
+import {
+	createInjector
+} from '../src/injector'
 
+describe('Scope', () => {
+
+	describe('digest', () => {
+		let scope;
+		beforeEach(function() {
+			publishExternalAPI();
+			scope = createInjector(['ng']).get('$rootScope');
+		});
 
 		it('should be uses as an object', () => {
 			scope.aProperty = 1
@@ -549,12 +556,10 @@ describe('Scope', () => {
 
 	describe('watchGroup', () => {
 		let scope
-		beforeEach(() => {
-			scope = new Scope()
-		})
-
-
-
+		beforeEach(function() {
+			publishExternalAPI();
+			scope = createInjector(['ng']).get('$rootScope');
+		});
 		it('takes watches as an array and calls listener with arrays', () => {
 			var gotNewVals, gotOldVals
 			scope.aValue = 1
@@ -666,28 +671,28 @@ describe('Scope', () => {
 		// 	scope = new Scope
 		// })
 
-
+		var parent;
+		beforeEach(function() {
+			publishExternalAPI();
+			parent = createInjector(['ng']).get('$rootScope');
+		});
 		it('inherits the parent properties', () => {
-			let parent = new Scope()
 			parent.aValue = [1, 2, 3]
 			let child = parent.$new()
 			expect(child.aValue).toEqual([1, 2, 3])
 		})
 		it('does not cause a parent to inherit its properties', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			child.aValue = [1, 2, 3]
 			expect(parent.aValue).toBeUndefined()
 		})
 		it('inherits the parent properties whenever they are defined', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			parent.aValue = [1, 2, 3]
 
 			expect(child.aValue).toEqual([1, 2, 3])
 		})
 		it('can manipulate a paret scope property', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			parent.aValue = [1, 2, 3]
 
@@ -697,7 +702,6 @@ describe('Scope', () => {
 
 		})
 		it('can watch a property in the parent', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			parent.aValue = [1, 2, 3]
 			child.counter = 0
@@ -713,7 +717,7 @@ describe('Scope', () => {
 			expect(child.counter).toBe(2)
 		})
 		it('can be nested at any depth', () => {
-			let test = new Scope()
+			let test = parent
 			let test1 = test.$new()
 			let test2 = test1.$new()
 			let test22 = test1.$new()
@@ -736,7 +740,6 @@ describe('Scope', () => {
 
 		})
 		it('shadows a parent property with the same name', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			parent.name = 'woniu'
 			child.name = 'mushbroom'
@@ -744,7 +747,6 @@ describe('Scope', () => {
 			expect(parent.name).toBe('woniu')
 		})
 		it('does not shadows a parent property with object', () => {
-			let parent = new Scope()
 			let child = parent.$new()
 			parent.user = {
 				'name': 'woniu'
@@ -754,7 +756,7 @@ describe('Scope', () => {
 			expect(parent.user.name).toBe('mushbroom')
 		})
 		it('does not digest its parent', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new()
 			parent.aValue = 'woniu'
 			parent.$watch(scope => scope.aValue, (newVal, oldVal, scope) => {
@@ -765,7 +767,7 @@ describe('Scope', () => {
 			expect(child.aValueWas).toBeUndefined()
 		})
 		it('keeps a record of its children', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child1 = parent.$new()
 			let child2 = parent.$new()
 			let child2_1 = child2.$new()
@@ -779,7 +781,7 @@ describe('Scope', () => {
 
 		})
 		it('digests its children', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new()
 			parent.aValue = 'woniu'
 			child.$watch(scope => scope.aValue, (newVal, oldVal, scope) => {
@@ -790,7 +792,7 @@ describe('Scope', () => {
 			expect(child.aValueWas).toBe('woniu')
 		})
 		it('digests from root on $apply', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new()
 			let child2 = child.$new()
 
@@ -804,7 +806,7 @@ describe('Scope', () => {
 			expect(parent.counter).toBe(1)
 		})
 		it('schedules a digest from root on $evalAsync', (done) => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new()
 			let child2 = child.$new()
 			parent.aValue = 'woniu'
@@ -821,7 +823,7 @@ describe('Scope', () => {
 
 		})
 		it('cannot watch parent attributes when isolated', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new(true)
 			parent.aValue = 'woniu'
 			child.$watch(scope => scope.aValue, (newVal, oldVal, scope) => {
@@ -832,7 +834,7 @@ describe('Scope', () => {
 			expect(child.aValueWas).toBeUndefined()
 		})
 		it('digest  its isolated children', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new(true)
 			child.aValue = 'woniu'
 			child.$watch(scope => scope.aValue, (newVal, oldVal, scope) => {
@@ -843,7 +845,7 @@ describe('Scope', () => {
 			expect(child.aValueWas).toBe('woniu')
 		})
 		it('digests from root on $apply when isolated', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new(true)
 			let child2 = child.$new()
 
@@ -858,7 +860,7 @@ describe('Scope', () => {
 			expect(parent.counter).toBe(1)
 		})
 		it('schedules a digest from root on $evalAsync when isolated', (done) => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new(true)
 			let child2 = child.$new()
 
@@ -878,7 +880,7 @@ describe('Scope', () => {
 		})
 
 		it('executes $evalAsync functions on isolated scopes', (done) => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new(true)
 
 			child.$evalAsync(scope => {
@@ -891,8 +893,8 @@ describe('Scope', () => {
 
 		})
 		it('can take some other scope as the parent', () => {
-			let prototyParent = new Scope()
-			let hierarchyParent = new Scope()
+			let prototyParent = parent.$new()
+			let hierarchyParent = parent.$new()
 			let child = prototyParent.$new(false, hierarchyParent)
 
 			prototyParent.aValue = 42
@@ -912,7 +914,7 @@ describe('Scope', () => {
 
 		})
 		it('is no longer digestes when $destroy has been calles', () => {
-			let parent = new Scope()
+			// let parent = new Scope()
 			let child = parent.$new()
 
 			child.aValue = [1, 2, 3]
@@ -940,9 +942,9 @@ describe('Scope', () => {
 	describe('watchCollections', () => {
 		let scope
 		beforeEach(() => {
-			scope = new Scope()
+			publishExternalAPI();
+			scope = createInjector(['ng']).get('$rootScope');
 		})
-
 		it('works like a normal for non-collections', () => {
 			let valueProvided
 			scope.aValue = 42
@@ -1264,7 +1266,9 @@ describe('Scope', () => {
 		let parent, scope, child, isolatedChild
 
 		beforeEach(() => {
-			parent = new Scope()
+			publishExternalAPI();
+			parent = createInjector(['ng']).get('$rootScope');
+			// parent = new Scope()
 			scope = parent.$new()
 			child = scope.$new()
 			isolatedChild = scope.$new(true)
@@ -1523,6 +1527,14 @@ describe('Scope', () => {
 
 
 	describe('结合scope和parse', () => {
+		let scope;
+		beforeEach(function() {
+			publishExternalAPI();
+			scope = createInjector(['ng']).get('$rootScope');
+		});
+
+
+
 		it('可以watch表达式了', () => {
 			let theValue
 			scope.aValue = 42
@@ -1621,19 +1633,28 @@ describe('Scope', () => {
 			scope.$digest();
 			expect(scope.$$watchers.length).toBe(0);
 		});
-
-
-
-
-
-
-
-
-
-
-
-
-
+		// it('allows $stateful filter value to change over time', function(done) {
+		// 	var injector = createInjector(['ng', function($filterProvider) {
+		// 		$filterProvider.register('withTime', function() {
+		// 			return _.extend(function(v) {
+		// 				return new Date().toISOString() + ': ' + v;
+		// 			}, {
+		// 				$stateful: true
+		// 			});
+		// 		});
+		// 	}]);
+		// 	scope = injector.get('$rootScope');
+		// 	var listenerSpy = jasmine.createSpy();
+		// 	scope.$watch('42 | withTime', listenerSpy);
+		// 	scope.$digest();
+		// 	var firstValue = listenerSpy.calls.mostRecent().args[0];
+		// 	setTimeout(function() {
+		// 		scope.$digest();
+		// 		var secondValue = listenerSpy.calls.mostRecent().args[0];
+		// 		expect(secondValue).not.toEqual(firstValue);
+		// 		done();
+		// 	}, 100);
+		// });
 
 
 	})

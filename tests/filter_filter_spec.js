@@ -1,11 +1,24 @@
-let Filter = require('../src/filter')
-let register = Filter.register
-let filter = Filter.filter
-let parse = require('../src/parse')
-let ff = require('../src/filter_filter')
+import {register,filter} from '../src/filter'
+import {filterFilter as ff} from '../src/filter_filter'
+
+import {
+  publishExternalAPI
+} from '../src/angular_public'
+import {
+  createInjector
+} from '../src/injector'
+
+
 describe('filter filter',()=>{
+var parse;
+beforeEach(function() {
+publishExternalAPI();
+parse = createInjector(['ng']).get('$parse');
+});
   it('可用',()=>{
-    expect(ff('filter')).toBeDefined()
+  var injector = createInjector(['ng']);
+  expect(injector.has('filterFilter')).toBe(true);
+    // expect(ff('filter')).toBeDefined()
   })
   it('可以用函数过滤数组',()=>{
     let fn = parse('[1,2,3,4,5] | filter:isOdd')

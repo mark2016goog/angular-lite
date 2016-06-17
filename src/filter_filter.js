@@ -1,6 +1,6 @@
-let Filter =require('./filter')
+import {register,filter} from './filter'
 let _ = require('lodash')
-let comparator = (actual, expected)=>{
+function comparator(actual, expected){
   if (_.isUndefined(actual)) {
     return false
   };
@@ -12,7 +12,7 @@ let comparator = (actual, expected)=>{
   expected = String(expected).toLowerCase()
   return actual.indexOf(expected)>=0
 }
-let deepCompare = (actual, expected, matchAnyProperty,isWildcard)=>{
+function deepCompare(actual, expected, matchAnyProperty,isWildcard){
   if (_.isString(actual)&& _.startsWith(expected,'!')) {
     return !deepCompare(actual,expected.substring(1),matchAnyProperty)
   };
@@ -43,7 +43,7 @@ let deepCompare = (actual, expected, matchAnyProperty,isWildcard)=>{
     return comparator(actual, expected)
   }
 }
-let createPredicateFn = expression=>{
+function createPredicateFn(expression){
   let shouldMatchPrimitives = _.isObject(expression)&&('$' in expression)
 
   return item=>{
@@ -54,7 +54,7 @@ let createPredicateFn = expression=>{
   }
 }
 
-let filterFilter = ()=>{
+function filterFilter (){
   return (arr,filterExpr)=>{
     let fn
     if (_.isFunction(filterExpr)) {
@@ -72,6 +72,6 @@ let filterFilter = ()=>{
   }
 }
 
-Filter.register('filter',filterFilter)
+// register('filter',filterFilter)
 
-module.exports = filterFilter;
+export {filterFilter}

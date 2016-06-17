@@ -1,18 +1,24 @@
-let filters = {}
+import {filterFilter} from './filter_filter'
+function $FilterProvider($provide){
 
-let register = (name, factory)=>{
-  if (_.isObject(name)) {
-    return _.map(name,(factory, name)=>{
-      return register(name,factory)
-    })
-  }else{
-    let filter = factory()
-    filters[name] = filter
-    return filter
+  let filters = {}
+
+  this.register = function(name, factory){
+    if (_.isObject(name)) {
+      return _.map(name,(factory, name)=>{
+        return this.register(name,factory)
+      },this)
+    }else{
+      return $provide.factory(name+'Filter',factory)
+      // let filter = factory()
+      // filters[name] = filter
+      // return filter
+    }
   }
+  this.$get = ['$injector',function ($injector){
+    return name=>$injector.get(name+'Filter')
+  }]
+  this.register('filter', filterFilter);
 }
-let filter = name=>{
-  return filters[name]
-}
-
-module.exports = {register,filter}
+$FilterProvider.$inject = ['$provide'];
+export {$FilterProvider}
