@@ -216,6 +216,7 @@ describe("$q", function() {
       return result * 2;
     });
     d.promise.then(fulfilledSpy);
+    
         // console.log(JSON.stringify(d.promise,null,2))
 
     d.resolve(20);
