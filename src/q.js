@@ -47,7 +47,15 @@ function $QProvider () {
         return this.then(null, onRejected)
       }
       finally (callback) {
-        return this.then(() => callback(), () => callback())
+        return this.then(val => {
+          callback()
+          return val
+        }, rejection => {
+          callback()
+          const d = new Deferred()
+          d.reject(rejection)
+          return d.promise
+        })
       }
     }
     class Deferred {
@@ -58,9 +66,13 @@ function $QProvider () {
         if (this.promise.$$state.status) {
           return
         }
-        this.promise.$$state.val = val
-        this.promise.$$state.status = 1
-        scheduleProcessQueue(this.promise.$$state)
+        if (val && _.isFunction(val.then)) {
+          val.then(::this.resolve, ::this.reject)
+        }else {
+          this.promise.$$state.val = val
+          this.promise.$$state.status = 1
+          scheduleProcessQueue(this.promise.$$state)
+        }
       }
       reject (val) {
         if (this.promise.$$state.status) {
