@@ -400,7 +400,7 @@ function $RootScopeProvider () {
         } while (scope && !propagationStopped)
         event.currentScope = null
         return event
-      // return 
+      // return
       }
       $broadcast (eventName) {
         const otherArgument = Array.prototype.slice.call(arguments, 1)

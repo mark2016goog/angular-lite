@@ -35,7 +35,7 @@ function $QProvider () {
         try {
           if (_.isFunction(fn)) {
             defered.resolve(fn(state.val))
-          } else if (state.status == 1) {
+          } else if (state.status === 1) {
             defered.resolve(state.val)
           } else {
             defered.reject(state.val)
@@ -117,7 +117,7 @@ function $QProvider () {
               const progressBack = handlers[3]
               try {
                 deferred.notify(_.isFunction(progressBack) ? progressBack(progress) : progress)
-              } catch(e) {
+              } catch (e) {
                 console.log(e)
               }
             })
@@ -129,7 +129,7 @@ function $QProvider () {
     function defer () {
       return new Deferred()
     }
-    return {defer,reject,when}
+    return {defer, reject, when}
   }]
 }
 export { $QProvider }

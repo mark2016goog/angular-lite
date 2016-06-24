@@ -1,4 +1,3 @@
-
 const FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m
 let INSTANTIATING = {}
 function createInjector (modulesToLoad) {
@@ -86,7 +85,9 @@ function createInjector (modulesToLoad) {
       if (_.isArray(fn)) {
         fn = _.last(fn)
       }
-    return self::fn(...args)
+      return fn.apply(self, args)
+
+    // return self::fn(...args)
     }
 
     function instantiate (Type, locals) {
@@ -151,4 +152,4 @@ function createInjector (modulesToLoad) {
   return instanceInjector
 }
 
-export { createInjector}
+export { createInjector }

@@ -46,7 +46,7 @@ function setupModuleLoader (window) {
   function getModule (name, modules) {
     if (modules.hasOwnProperty(name)) {
       return modules[name]
-    }else {
+    } else {
       throw 'Module ' + name + ' is not exists'
     }
   }
@@ -55,7 +55,7 @@ function setupModuleLoader (window) {
     return (name, requires, configFn) => {
       if (requires) {
         return createModule(name, requires, modules, configFn)
-      }else {
+      } else {
         return getModule(name, modules)
       }
     }
