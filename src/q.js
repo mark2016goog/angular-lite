@@ -6,7 +6,25 @@ function $QProvider () {
         processQueue(state)
       })
     }
-
+    function makePromise (val, resolved) {
+      const d = new Deferred()
+      if (resolved) {
+        d.resolve(val)
+      } else {
+        d.reject(val)
+      }
+      return d.promise
+    }
+    function reject (rejection) {
+      var d = new Deferred()
+      d.reject(rejection)
+      return d.promise
+    }
+    function when (value) {
+      const d = new Deferred()
+      d.resolve(value)
+      return d.promise
+    }
     function processQueue (state) {
       let pending = state.pending
       pending.forEach((handler) => {
@@ -34,10 +52,10 @@ function $QProvider () {
           pending: []
         }
       }
-      then (onFulfilled, onRejected) {
+      then (onFulfilled, onRejected, onProgress) {
         let result = new Deferred()
         // status1是resolve，2是reject
-        this.$$state.pending.push([result, onFulfilled, onRejected])
+        this.$$state.pending.push([result, onFulfilled, onRejected, onProgress])
         if (this.$$state.status > 0) {
           scheduleProcessQueue(this.$$state)
         }
@@ -46,16 +64,23 @@ function $QProvider () {
       catch (onRejected) {
         return this.then(null, onRejected)
       }
-      finally (callback) {
+      finally (callback, progressBack) {
         return this.then(val => {
-          callback()
+          const callbackVal = callback()
+          if (callbackVal && callbackVal.then) {
+            return callbackVal.then(() => val)
+          }
           return val
         }, rejection => {
-          callback()
-          const d = new Deferred()
-          d.reject(rejection)
-          return d.promise
-        })
+          const callbackVal = callback()
+          if (callbackVal && callbackVal.then) {
+            return callbackVal.then(() => {
+              return makePromise(rejection, false)
+            })
+          } else {
+            return makePromise(rejection, false)
+          }
+        }, progressBack)
       }
     }
     class Deferred {
@@ -67,8 +92,9 @@ function $QProvider () {
           return
         }
         if (val && _.isFunction(val.then)) {
-          val.then(::this.resolve, ::this.reject)
-        }else {
+          val.then(_.bind(this.resolve, this), _.bind(this.reject, this), _.bind(this.notify, this))
+        // val.then(::this.resolve, ::this.reject,::this.notify)
+        } else {
           this.promise.$$state.val = val
           this.promise.$$state.status = 1
           scheduleProcessQueue(this.promise.$$state)
@@ -82,15 +108,28 @@ function $QProvider () {
         this.promise.$$state.status = 2
         scheduleProcessQueue(this.promise.$$state)
       }
-
+      notify (progress) {
+        const pending = this.promise.$$state.pending
+        if (pending && pending.length && !this.promise.$$state.status) {
+          $rootScope.$evalAsync(() => {
+            _.forEach(pending, handlers => {
+              const deferred = handlers[0]
+              const progressBack = handlers[3]
+              try {
+                deferred.notify(_.isFunction(progressBack) ? progressBack(progress) : progress)
+              } catch(e) {
+                console.log(e)
+              }
+            })
+          })
+        }
+      }
     }
 
     function defer () {
       return new Deferred()
     }
-    return {
-      defer: defer
-    }
+    return {defer,reject,when}
   }]
 }
 export { $QProvider }
