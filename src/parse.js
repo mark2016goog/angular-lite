@@ -1,5 +1,3 @@
-'use strict'
-
 // let filter = require('./filter').filter
 const ESCAPES = {
   'n': '\n',

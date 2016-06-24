@@ -1,79 +1,79 @@
-'use strict'
 const _ = require('lodash')
-function $RootScopeProvider() {
-  this.$get = ['$parse', function($parse) {
+function $RootScopeProvider () {
+  this.$get = ['$parse', function ($parse) {
     // All previous code from scope.js goes here.
 
-    const initWatchFn = () => {}
-      //  防止object中有length属性
+    const initWatchFn = () => {
+    }
+    //  防止object中有length属性
     const isArrayLike = obj => {
       if (_.isNull(obj) || _.isUndefined(obj)) {
         return false
       }
       var length = obj.length
       return length === 0 ||
-        (_.isNumber(length) && length > 0 && (length - 1) in obj)
+      (_.isNumber(length) && length > 0 && (length - 1) in obj)
     }
     class Scope {
-      constructor() {
-          //  $watch队列
-          this.$$watchers = []
-          this.$$lastDirtyWatch = null
-            //  $evalasync队列
-          this.$$asyncQueue = []
-            //  applyAsync队列
-          this.$$applyAsyncQueue = []
-            //  $postDigest队列
-          this.$$postDigestQueue = []
-          this.$$applyAsyncId = null
-          this.$root = this
-            // 记录子scope 方便递归digest $new中维护
-          this.$$children = []
-            // 事件
-          this.$$listeners = {}
-            //  记录状态是$digest，还是$apply
-          this.$$phase = null
+      constructor () {
+        //  $watch队列
+        this.$$watchers = []
+        this.$$lastDirtyWatch = null
+        //  $evalasync队列
+        this.$$asyncQueue = []
+        //  applyAsync队列
+        this.$$applyAsyncQueue = []
+        //  $postDigest队列
+        this.$$postDigestQueue = []
+        this.$$applyAsyncId = null
+        this.$root = this
+        // 记录子scope 方便递归digest $new中维护
+        this.$$children = []
+        // 事件
+        this.$$listeners = {}
+        //  记录状态是$digest，还是$apply
+        this.$$phase = null
+      }
+      //  监听
+      $watch (watchFn, listenerFn, valueEq) {
+        watchFn = $parse(watchFn)
+        if (watchFn.$$watchDelegate) {
+          return watchFn.$$watchDelegate(this, listenerFn, valueEq, watchFn)
         }
-        //  监听
-      $watch(watchFn, listenerFn, valueEq) {
-          watchFn = $parse(watchFn)
-          if (watchFn.$$watchDelegate) {
-            return watchFn.$$watchDelegate(this, listenerFn, valueEq, watchFn)
-          };
-          const watcher = {
-            watchFn: watchFn,
-            listenerFn: listenerFn || function() {},
-            last: initWatchFn,
-            valueEq: !!valueEq // 是否递归比较
-          }
-          this.$$watchers.unshift(watcher)
-            //  上次dirty出发的watchFn
-          this.$root.$$lastDirtyWatch = null
-            //  返回函数，执行可以注销watch 直接执行splice
-          return () => {
-            const index = this.$$watchers.indexOf(watcher)
-            if (index >= 0) {
-              this.$$watchers.splice(index, 1)
-              this.$root.$$lastDirtyWatch = null
-            }
+        const watcher = {
+          watchFn: watchFn,
+          listenerFn: listenerFn || function () {},
+          last: initWatchFn,
+          valueEq: !!valueEq // 是否递归比较
+        }
+        this.$$watchers.unshift(watcher)
+        //  上次dirty出发的watchFn
+        this.$root.$$lastDirtyWatch = null
+        //  返回函数，执行可以注销watch 直接执行splice
+        return () => {
+          const index = this.$$watchers.indexOf(watcher)
+          if (index >= 0) {
+            this.$$watchers.splice(index, 1)
+            this.$root.$$lastDirtyWatch = null
           }
         }
-        // 和$watch(true)类似，不过不全量检查
-        // arr = [{name:1}]
-        // arr.push shift arr[0] = 1都检查
-        // arr[0].name=2不检查 因为引用没变
-      $watchCollection(watchFn, listenerFn) {
+      }
+      // 和$watch(true)类似，不过不全量检查
+      // arr = [{name:1}]
+      // arr.push shift arr[0] = 1都检查
+      // arr[0].name=2不检查 因为引用没变
+      $watchCollection (watchFn, listenerFn) {
         let newVal, oldVal
         let veryOldVal
         const trackVeryOldValue = (listenerFn.length > 1)
-          //  有不同的，就+1外部$watch就能检测到变化
+        //  有不同的，就+1外部$watch就能检测到变化
         let changeCount = 0
         let firstRun = true
-          // parse解析一下，支持表达式
+        // parse解析一下，支持表达式
         watchFn = $parse(watchFn)
         const internalWatchFn = scope => {
           newVal = watchFn(scope)
-            //  也是操碎了心
+          //  也是操碎了心
           if (_.isObject(newVal)) {
             if (isArrayLike(newVal)) {
               if (!_.isArray(oldVal)) {
@@ -135,29 +135,29 @@ function $RootScopeProvider() {
         }
         return this.$watch(internalWatchFn, internalListenerFn)
       }
-      $new(isolated, parent) {
-          let childScope
-          parent = parent || this
-          if (isolated) {
-            childScope = new Scope()
-            childScope.$root = parent.$root
-            childScope.$$asyncQueue = parent.$$asyncQueue
-            childScope.$$postDigestQueue = parent.$$postDigestQueue
-            childScope.$$applyAsyncQueue = parent.$$applyAsyncQueue
-          } else {
-            childScope = Object.create(this)
-          }
-          //  保存在$$children中
-          parent.$$children.push(childScope)
-            //  每个继承的scope有自己的wathcers
-          childScope.$$watchers = []
-          childScope.$$children = []
-          childScope.$$listeners = {}
-          childScope.$parent = parent
-          return childScope
+      $new (isolated, parent) {
+        let childScope
+        parent = parent || this
+        if (isolated) {
+          childScope = new Scope()
+          childScope.$root = parent.$root
+          childScope.$$asyncQueue = parent.$$asyncQueue
+          childScope.$$postDigestQueue = parent.$$postDigestQueue
+          childScope.$$applyAsyncQueue = parent.$$applyAsyncQueue
+        } else {
+          childScope = Object.create(this)
         }
-        //  监听多个
-      $watchGroup(watchFns, listenerFn) {
+        //  保存在$$children中
+        parent.$$children.push(childScope)
+        //  每个继承的scope有自己的wathcers
+        childScope.$$watchers = []
+        childScope.$$children = []
+        childScope.$$listeners = {}
+        childScope.$parent = parent
+        return childScope
+      }
+      //  监听多个
+      $watchGroup (watchFns, listenerFn) {
         const newVals = new Array(watchFns.length)
         const oldVals = new Array(watchFns.length)
 
@@ -190,11 +190,11 @@ function $RootScopeProvider() {
           return this.$watch(watchFn, (newVal, oldVal) => {
             newVals[i] = newVal
             oldVals[i] = oldVal
-              //  evalAsync是最后才执行的
+            //  evalAsync是最后才执行的
             if (!changeReactionScheduled) {
               changeReactionScheduled = true
               this.$evalAsync(watchGroupListener)
-                //  listenerFn(newVals,oldVals,this)
+            //  listenerFn(newVals,oldVals,this)
             }
           })
         })
@@ -205,13 +205,13 @@ function $RootScopeProvider() {
           })
         }
       }
-      $digest() {
+      $digest () {
         let dirty
-          // 十次都不稳定，就报错
+        // 十次都不稳定，就报错
         let ttl = 10
-          // 记录上次dirty的watch
+        // 记录上次dirty的watch
         this.$root.$$lastDirtyWatch = null
-          // 用$$phase记录状态
+        // 用$$phase记录状态
         this.$begainPhase('$digest')
         if (this.$root.$$applyAsyncId) {
           clearTimeout(this.$root.$$applyAsyncId)
@@ -243,12 +243,12 @@ function $RootScopeProvider() {
           }
         }
       }
-      $eval(fn, arg) {
+      $eval (fn, arg) {
         // parse一下，支持表达式，不写parse，就只支持函数，watch apply等一样
         fn = $parse(fn)
         return fn(this, arg)
       }
-      $apply(fn) {
+      $apply (fn) {
         try {
           this.$begainPhase('$apply')
           return this.$eval(fn)
@@ -257,7 +257,7 @@ function $RootScopeProvider() {
           this.$root.$digest()
         }
       }
-      $evalAsync(fn) {
+      $evalAsync (fn) {
         if (!this.$$phase && !this.$$asyncQueue.length) {
           setTimeout(() => {
             if (this.$$asyncQueue.length) {
@@ -270,20 +270,20 @@ function $RootScopeProvider() {
           expression: fn
         })
       }
-      $applyAsync(fn) {
+      $applyAsync (fn) {
         this.$$applyAsyncQueue.push(() => {
           this.$eval(fn)
         })
         if (this.$root.$$applyAsyncId === null) {
           this.$$applyAsyncId = setTimeout(() => {
             this.$apply(() => {
-                this.$$flushApplyAsync()
-              })
-              //  this.$apply(_.bind(this.$$flushApplyAsync,this))
+              this.$$flushApplyAsync()
+            })
+          //  this.$apply(_.bind(this.$$flushApplyAsync,this))
           }, 0)
         }
       }
-      $$everyScope(fn) {
+      $$everyScope (fn) {
         if (fn(this)) {
           return this.$$children.every(child => {
             return child.$$everyScope(fn)
@@ -292,7 +292,7 @@ function $RootScopeProvider() {
           return false
         }
       }
-      $$flushApplyAsync() {
+      $$flushApplyAsync () {
         while (this.$$applyAsyncQueue.length) {
           try {
             this.$$applyAsyncQueue.shift()()
@@ -302,10 +302,10 @@ function $RootScopeProvider() {
         }
         this.$root.$$applyAsyncId = null
       }
-      $$postDigest(fn) {
+      $$postDigest (fn) {
         this.$$postDigestQueue.push(fn)
       }
-      $$digestOnce() {
+      $$digestOnce () {
         let dirty
         let continueLoop = true
         this.$$everyScope(scope => {
@@ -321,7 +321,7 @@ function $RootScopeProvider() {
                 dirty = true
               } else if (scope.$root.$$lastDirtyWatch === watcher) {
                 continueLoop = false
-                  // lodash的foreach return false 就顺便中断了
+                // lodash的foreach return false 就顺便中断了
                 return false
               }
             } catch (e) {
@@ -332,7 +332,7 @@ function $RootScopeProvider() {
         })
         return dirty
       }
-      $$areEqual(newVal, oldVal, valueEq) {
+      $$areEqual (newVal, oldVal, valueEq) {
         if (valueEq) {
           return _.isEqual(newVal, oldVal)
         } else {
@@ -340,17 +340,17 @@ function $RootScopeProvider() {
           return newVal === oldVal || (_.isNaN(newVal) && _.isNaN(oldVal))
         }
       }
-      $begainPhase(phase) {
+      $begainPhase (phase) {
         if (this.$$phase) {
           throw this.$$phase + 'already in progress'
         } else {
           this.$$phase = phase
         }
       }
-      $clearPhase() {
+      $clearPhase () {
         this.$$phase = null
       }
-      $destroy() {
+      $destroy () {
         this.$broadcast('$destroy')
         if (this.$parent) {
           const siblings = this.$parent.$$children
@@ -362,22 +362,22 @@ function $RootScopeProvider() {
         this.$$watchers = null
         this.$$listeners = {}
       }
-      $on(eventName, listener) {
+      $on (eventName, listener) {
         let listeners = this.$$listeners[eventName]
         if (!listeners) {
           this.$$listeners[eventName] = listeners = []
         }
         listeners.push(listener)
-          // deregister
+        // deregister
         return () => {
           const index = listeners.indexOf(listener)
           if (index >= 0) {
-            //不用splice 防止循环的时候跳过一个，副作用 触发的时候再splice
+            // 不用splice 防止循环的时候跳过一个，副作用 触发的时候再splice
             listeners[index] = null
-          };
+          }
         }
       }
-      $emit(eventName) {
+      $emit (eventName) {
         let propagationStopped = false
         const otherArgument = Array.prototype.slice.call(arguments, 1)
         const event = {
@@ -400,9 +400,9 @@ function $RootScopeProvider() {
         } while (scope && !propagationStopped)
         event.currentScope = null
         return event
-          // return 
+      // return 
       }
-      $broadcast(eventName) {
+      $broadcast (eventName) {
         const otherArgument = Array.prototype.slice.call(arguments, 1)
         const event = {
           name: eventName,
@@ -421,10 +421,10 @@ function $RootScopeProvider() {
         event.currentScope = null
         return event
       }
-      $$fireEventOnScope(eventName, listenerArgs) {
+      $$fireEventOnScope (eventName, listenerArgs) {
         const listeners = this.$$listeners[eventName] || []
         let i = 0
-          // 不用forEach 方便删除
+        // 不用forEach 方便删除
         while (i < listeners.length) {
           if (listeners[i] === null) {
             listeners.splice(i, 1)
@@ -441,13 +441,9 @@ function $RootScopeProvider() {
       }
     }
 
-
-    var $rootScope = new Scope();
-    return $rootScope;
-  }];
+    var $rootScope = new Scope()
+    return $rootScope
+  }]
 }
 
-
-export {
-  $RootScopeProvider
-}
+export { $RootScopeProvider }

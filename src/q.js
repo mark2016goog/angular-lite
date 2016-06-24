@@ -1,80 +1,79 @@
-'use strict';
-
-
-
-function $QProvider() {
-  this.$get = ['$rootScope',function($rootScope) {
-    function scheduleProcessQueue(state) {
+function $QProvider () {
+  this.$get = ['$rootScope', function ($rootScope) {
+    function scheduleProcessQueue (state) {
       // console.log(state)
       $rootScope.$evalAsync(() => {
-        processQueue(state);
+        processQueue(state)
       })
     }
-    function processQueue(state) {
+
+    function processQueue (state) {
       let pending = state.pending
-      pending.forEach((handler)=>{
+      pending.forEach((handler) => {
         // status1是resolve，2是reject
         let fn = handler[state.status]
         let defered = handler[0]
         // console.log(handler)
-        if (_.isFunction(fn)) {
-          defered.resolve(fn(state.val))
+        try {
+          if (_.isFunction(fn)) {
+            defered.resolve(fn(state.val))
+          } else if (state.status == 1) {
+            defered.resolve(state.val)
+          } else {
+            defered.reject(state.val)
+          }
+        } catch (e) {
+          defered.reject(e)
         }
-        // else if(state.status==1){
-        //   defered.resolve(state.val)
-        // }else{
-        //   defered.reject(state.val)
-        // }
       })
-      state.pending.length=0
-
+      state.pending.length = 0
     }
     class Promise {
-      constructor() {
+      constructor () {
         this.$$state = {
-          pending:[]
+          pending: []
         }
       }
-      then(onFulfilled,onRejected) {
+      then (onFulfilled, onRejected) {
         let result = new Deferred()
         // status1是resolve，2是reject
-        this.$$state.pending.push([result,onFulfilled,onRejected])
-        if (this.$$state.status>0) {
-          scheduleProcessQueue(this.$$state);
-        };
+        this.$$state.pending.push([result, onFulfilled, onRejected])
+        if (this.$$state.status > 0) {
+          scheduleProcessQueue(this.$$state)
+        }
         return result.promise
       }
-      catch(onRejected){
-        return this.then(null,onRejected)
+      catch (onRejected) {
+        return this.then(null, onRejected)
       }
-      finally(callback){
-        return this.then(()=>callback(),()=>callback())
+      finally (callback) {
+        return this.then(() => callback(), () => callback())
       }
     }
     class Deferred {
-      constructor() {
+      constructor () {
         this.promise = new Promise()
       }
-      resolve(val) {
+      resolve (val) {
         if (this.promise.$$state.status) {
-          return 
+          return
         }
         this.promise.$$state.val = val
         this.promise.$$state.status = 1
-        scheduleProcessQueue(this.promise.$$state);
+        scheduleProcessQueue(this.promise.$$state)
       }
-      reject(val) {
+      reject (val) {
         if (this.promise.$$state.status) {
-          return 
+          return
         }
         this.promise.$$state.val = val
         this.promise.$$state.status = 2
-        scheduleProcessQueue(this.promise.$$state);
+        scheduleProcessQueue(this.promise.$$state)
       }
 
     }
 
-    function defer() {
+    function defer () {
       return new Deferred()
     }
     return {
@@ -82,6 +81,4 @@ function $QProvider() {
     }
   }]
 }
-export {
-  $QProvider
-}
+export { $QProvider }
