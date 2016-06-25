@@ -1,7 +1,6 @@
 {
   "extends": "vue",
   "rules": {
-    "semi": [2, "never"],
     "no-cond-assign":0,
     "no-unmodified-loop-condition":0,
     "object-curly-spacing":0

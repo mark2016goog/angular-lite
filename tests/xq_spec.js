@@ -523,5 +523,54 @@ describe('$q', function () {
     expect(fulfilledSpy).toHaveBeenCalledWith('ok')
     expect(rejectedSpy).not.toHaveBeenCalled()
   })
-  it('xxx')
+  it('takes callbacks directly when wrapping', function () {
+    var fulfilledSpy = jasmine.createSpy()
+    var rejectedSpy = jasmine.createSpy()
+    var progressSpy = jasmine.createSpy()
+    var wrapped = $q.defer()
+    $q.when(
+      wrapped.promise,
+      fulfilledSpy,
+      rejectedSpy,
+      progressSpy
+    )
+    wrapped.notify('working...')
+    wrapped.resolve('ok')
+    $rootScope.$apply()
+    expect(fulfilledSpy).toHaveBeenCalledWith('ok')
+    expect(rejectedSpy).not.toHaveBeenCalled()
+    expect(progressSpy).toHaveBeenCalledWith('working...')
+  })
+  it('makes an immediately resolved promise with resolve', function () {
+    var fulfilledSpy = jasmine.createSpy()
+    var rejectedSpy = jasmine.createSpy()
+    var promise = $q.resolve('ok')
+    promise.then(fulfilledSpy, rejectedSpy)
+    $rootScope.$apply()
+    expect(fulfilledSpy).toHaveBeenCalledWith('ok')
+    expect(rejectedSpy).not.toHaveBeenCalled()
+  })
+  describe('all', function () {
+    it('can resolve an array of promises to array of results', function () {
+      var promise = $q.all([$q.when(1), $q.when(2), $q.when(3)])
+      var fulfilledSpy = jasmine.createSpy()
+      promise.then(fulfilledSpy)
+      $rootScope.$apply()
+      expect(fulfilledSpy).toHaveBeenCalledWith([1, 2, 3])
+    })
+    it('can resolve an object of promises to an object of results', function () {
+      var promise = $q.all({a: $q.when(1), b: $q.when(2)})
+      var fulfilledSpy = jasmine.createSpy()
+      promise.then(fulfilledSpy)
+      $rootScope.$apply()
+      expect(fulfilledSpy).toHaveBeenCalledWith({a: 1, b: 2})
+    })
+    it('resolves an empty array of promises immediately', function () {
+      var promise = $q.all([])
+      var fulfilledSpy = jasmine.createSpy()
+      promise.then(fulfilledSpy)
+      $rootScope.$apply()
+      expect(fulfilledSpy).toHaveBeenCalledWith([])
+    })
+  })
 })

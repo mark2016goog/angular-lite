@@ -20,9 +20,25 @@ function $QProvider () {
       d.reject(rejection)
       return d.promise
     }
-    function when (value) {
+    function when (value, callback, errBack, progressBack) {
       const d = new Deferred()
       d.resolve(value)
+      return d.promise.then(callback, errBack, progressBack)
+    }
+    function all (promises) {
+      const results = _.isArray(promises) ? [] : {}
+      const d = new Deferred()
+      let counter = 0
+      _.forEach(promises, (promise, index) => {
+        counter++
+        promise.then(val => {
+          counter--
+          results[index] = val
+          if (!counter) {
+            d.resolve(results)
+          }
+        })
+      })
       return d.promise
     }
     function processQueue (state) {
@@ -129,7 +145,13 @@ function $QProvider () {
     function defer () {
       return new Deferred()
     }
-    return { defer, reject, when}
+    return {
+      defer,
+      reject,
+      when,
+      all,
+      resolve: when
+    }
   }]
 }
 export { $QProvider }

@@ -1,8 +1,7 @@
 import { register, filter } from '../src/filter'
 import { filterFilter as ff } from '../src/filter_filter'
-
-import { publishExternalAPI} from '../src/angular_public'
-import { createInjector} from '../src/injector'
+import { publishExternalAPI } from '../src/angular_public'
+import { createInjector } from '../src/injector'
 
 describe('filter filter', () => {
   var parse

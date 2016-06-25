@@ -1,6 +1,5 @@
-'use strict'
-import { publishExternalAPI} from '../src/angular_public'
-import { createInjector} from '../src/injector'
+import { publishExternalAPI } from '../src/angular_public'
+import { createInjector } from '../src/injector'
 
 describe('angularPublic', function () {
   it('sets up the angular object and the module loader', function () {
