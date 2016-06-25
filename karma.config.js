@@ -28,9 +28,6 @@ module.exports = function (config) {
           test: /\.(js|jsx)$/, exclude: /(bower_components|node_modules)/,
           loader: 'babel-loader'
         }],
-        noParse: [
-          /\/sinon\.js/
-        ],
         postLoaders: [{
           test: /\.(js|jsx)$/, exclude: /(node_modules|bower_components|tests)/,
           loader: 'istanbul-instrumenter'
