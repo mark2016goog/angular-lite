@@ -3,6 +3,8 @@ import { $FilterProvider } from './filter'
 import { $ParseProvider } from './parse'
 import { $RootScopeProvider } from './scope'
 import { $QProvider } from './q'
+import { $HttpBackendProvider } from './http_backend'
+import { $HttpProvider } from './http'
 /**
  * 注册全局模块
  */
@@ -13,6 +15,8 @@ function publishExternalAPI () {
   ngModule.provider('$parse', $ParseProvider)
   ngModule.provider('$rootScope', $RootScopeProvider)
   ngModule.provider('$q', $QProvider)
+  ngModule.provider('$httpBackend', $HttpBackendProvider)
+  ngModule.provider('$http', $HttpProvider)
 }
 
 export { publishExternalAPI }

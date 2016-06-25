@@ -31,14 +31,20 @@ function $QProvider () {
       let counter = 0
       _.forEach(promises, (promise, index) => {
         counter++
-        promise.then(val => {
+        when(promise).then(val => {
           counter--
           results[index] = val
           if (!counter) {
             d.resolve(results)
           }
+        }, rejection => {
+          d.reject(rejection)
         })
       })
+      if (!counter) {
+        d.resolve(results)
+      }
+
       return d.promise
     }
     function processQueue (state) {
