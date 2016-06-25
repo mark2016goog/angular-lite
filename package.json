@@ -60,6 +60,7 @@
     "karma-webpack": "^1.7.0",
     "phantomjs": "^1.9.17",
     "phantomjs-polyfill": "0.0.1",
+    "sinon": "^1.17.4",
     "webpack": "^1.12.2",
     "webpack-dev-server": "^1.12.1"
   }

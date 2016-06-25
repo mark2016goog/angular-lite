@@ -1,9 +1,11 @@
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
-
+// let sinon = require('sinon')
+var sinon = require('sinon')
 describe('$http', function () {
   var $http
   var xhr
+  var requests
   beforeEach(function () {
     publishExternalAPI()
     var injector = createInjector(['ng'])
@@ -11,6 +13,10 @@ describe('$http', function () {
   })
   beforeEach(function () {
     xhr = sinon.useFakeXMLHttpRequest()
+    requests = []
+    xhr.onCreate = function (req) {
+      requests.push(req)
+    }
   })
   afterEach(function () {
     xhr.restore()
