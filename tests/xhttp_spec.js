@@ -2,6 +2,10 @@
 
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
+
+var _ = require('lodash')
+var sinon = require('sinon')
+console.log(sinon)
 describe('$http', function () {
   var $http
   var xhr

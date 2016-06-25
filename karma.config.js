@@ -1,4 +1,4 @@
-var webpack = require('karma-webpack');
+var webpack = require('karma-webpack')
 
 module.exports = function (config) {
   config.set({
@@ -28,6 +28,9 @@ module.exports = function (config) {
           test: /\.(js|jsx)$/, exclude: /(bower_components|node_modules)/,
           loader: 'babel-loader'
         }],
+        noParse: [
+          /\/sinon\.js/
+        ],
         postLoaders: [{
           test: /\.(js|jsx)$/, exclude: /(node_modules|bower_components|tests)/,
           loader: 'istanbul-instrumenter'
@@ -35,5 +38,5 @@ module.exports = function (config) {
       }
     },
     webpackMiddleware: { noInfo: true }
-  });
-};
+  })
+}
