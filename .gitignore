@@ -9,3 +9,4 @@ node_modules
 benchmarks/browser.js
 coverage
 perf
+npm-debug.log
