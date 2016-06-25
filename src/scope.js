@@ -1,4 +1,3 @@
-const _ = require('lodash')
 function $RootScopeProvider () {
   this.$get = ['$parse', function ($parse) {
     // All previous code from scope.js goes here.

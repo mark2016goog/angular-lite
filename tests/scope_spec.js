@@ -652,7 +652,7 @@ describe('Scope', () => {
   describe('inheritance', () => {
     // let scope
     // beforeEach(() => {
-    // 	scope = new Scope
+    //  scope = new Scope
     // })
 
     var parent
@@ -1603,26 +1603,26 @@ describe('Scope', () => {
       expect(scope.$$watchers.length).toBe(0)
     })
     // it('allows $stateful filter value to change over time', function(done) {
-    // 	var injector = createInjector(['ng', function($filterProvider) {
-    // 		$filterProvider.register('withTime', function() {
-    // 			return _.extend(function(v) {
-    // 				return new Date().toISOString() + ': ' + v
-    // 			}, {
-    // 				$stateful: true
-    // 			})
-    // 		})
-    // 	}])
-    // 	scope = injector.get('$rootScope')
-    // 	var listenerSpy = jasmine.createSpy()
-    // 	scope.$watch('42 | withTime', listenerSpy)
-    // 	scope.$digest()
-    // 	var firstValue = listenerSpy.calls.mostRecent().args[0]
-    // 	setTimeout(function() {
-    // 		scope.$digest()
-    // 		var secondValue = listenerSpy.calls.mostRecent().args[0]
-    // 		expect(secondValue).not.toEqual(firstValue)
-    // 		done()
-    // 	}, 100)
+    //  var injector = createInjector(['ng', function($filterProvider) {
+    //    $filterProvider.register('withTime', function() {
+    //      return _.extend(function(v) {
+    //        return new Date().toISOString() + ': ' + v
+    //      }, {
+    //        $stateful: true
+    //      })
+    //    })
+    //  }])
+    //  scope = injector.get('$rootScope')
+    //  var listenerSpy = jasmine.createSpy()
+    //  scope.$watch('42 | withTime', listenerSpy)
+    //  scope.$digest()
+    //  var firstValue = listenerSpy.calls.mostRecent().args[0]
+    //  setTimeout(function() {
+    //    scope.$digest()
+    //    var secondValue = listenerSpy.calls.mostRecent().args[0]
+    //    expect(secondValue).not.toEqual(firstValue)
+    //    done()
+    //  }, 100)
     // })
 
   })

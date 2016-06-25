@@ -3,7 +3,6 @@ import { parse } from '../src/parse'
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
 
-let _ = require('lodash')
 describe('Filter', () => {
   beforeEach(function () {
     publishExternalAPI()

@@ -1,7 +1,7 @@
+// var sinon = require('sinon')
+
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
-// let sinon = require('sinon')
-var sinon = require('sinon')
 describe('$http', function () {
   var $http
   var xhr
