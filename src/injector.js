@@ -1,9 +1,9 @@
 const FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m
-let INSTANTIATING = {}
+const INSTANTIATING = {}
 function createInjector (modulesToLoad) {
-  let instanceCache = {}
-  let providerCache = {}
-  let loadModules = new Map()
+  const instanceCache = {}
+  const providerCache = {}
+  const loadModules = new Map()
   providerCache.$provide = {
     constant(key, value) {
       if (key === 'hasOwnProperty') {
@@ -32,25 +32,25 @@ function createInjector (modulesToLoad) {
       this.factory(key, () => val)
     },
     decorator(serviceName, decoratorFn) {
-      let provider = providerInjector.get(serviceName + 'Provider')
-      let originGet = provider.$get
+      const provider = providerInjector.get(serviceName + 'Provider')
+      const originGet = provider.$get
       provider.$get = () => {
-        let instance = instanceInjector.invoke(originGet, provider)
-        instanceInjector.invoke(decoratorFn, null, {'$delegate': instance})
+        const instance = instanceInjector.invoke(originGet, provider)
+        instanceInjector.invoke(decoratorFn, null, { '$delegate': instance })
         return instance
       }
     }
   }
-  let providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {
+  const providerInjector = providerCache.$injector = createInternalInjector(providerCache, name => {
     throw 'unknow provider ' + name
   })
-  let instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, name => {
+  const instanceInjector = instanceCache.$injector = createInternalInjector(instanceCache, name => {
     var provider = providerInjector.get(name + 'Provider')
     return instanceInjector.invoke(provider.$get, provider)
   })
 
   function createInternalInjector (cache, factoryFn) {
-    let getService = name => {
+    const getService = name => {
       if (cache.hasOwnProperty(name)) {
         if (cache[name] === INSTANTIATING) {
           throw new Error('Circular dependency found')
@@ -75,7 +75,7 @@ function createInjector (modulesToLoad) {
     }
 
     function invoke (fn, self, locals) {
-      let args = _.map(annotate(fn), token => {
+      const args = _.map(annotate(fn), token => {
         if (_.isString(token)) {
           return locals && locals.hasOwnProperty(token) ? locals[token] : getService(token)
         } else {
@@ -123,9 +123,9 @@ function createInjector (modulesToLoad) {
 
   function runInvokeQueue (queue) {
     _.forEach(queue, invokeArgs => {
-      let service = providerInjector.get(invokeArgs[0])
-      let method = invokeArgs[1]
-      let args = invokeArgs[2]
+      const service = providerInjector.get(invokeArgs[0])
+      const method = invokeArgs[1]
+      const args = invokeArgs[2]
       service[method].apply(service, args)
     })
   }
@@ -134,13 +134,13 @@ function createInjector (modulesToLoad) {
     if (!loadModules.get(moduleName)) {
       loadModules.set(moduleName, true)
       if (_.isString(moduleName)) {
-        let module = angular.module(moduleName)
+        const module = angular.module(moduleName)
         _.forEach(module.requires, loadModule)
         runInvokeQueue(module._invokeQueue)
         runInvokeQueue(module._configBlocks)
         runBlocks = runBlocks.concat(module._runBlocks)
       } else if (_.isFunction(moduleName) || _.isArray(moduleName)) {
-        let res = providerInjector.invoke(moduleName)
+        const res = providerInjector.invoke(moduleName)
         res && runBlocks.push(res)
       }
     }

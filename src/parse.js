@@ -35,7 +35,7 @@ function ifDefined (value, defaultValue) {
 }
 
 function constantWatchDelegate (scope, listenFn, valueEq, watchFn) {
-  let unwatch = scope.$watch(() => watchFn(scope), (...args) => {
+  const unwatch = scope.$watch(() => watchFn(scope), (...args) => {
     if (_.isFunction(listenFn)) {
       listenFn.apply(this, args)
     // this::listenFn(...args)
@@ -47,7 +47,7 @@ function constantWatchDelegate (scope, listenFn, valueEq, watchFn) {
 
 function oneTimeWatchDelegate (scope, listenFn, valueEq, watchFn) {
   let lastVal
-  let unwatch = scope.$watch(() => watchFn(scope), (newVal, oldVal, scope) => {
+  const unwatch = scope.$watch(() => watchFn(scope), (newVal, oldVal, scope) => {
     lastVal = newVal // newVal
     if (_.isFunction(listenFn)) {
       listenFn.apply(this, [newVal, oldVal, scope])
@@ -65,9 +65,8 @@ function oneTimeWatchDelegate (scope, listenFn, valueEq, watchFn) {
 }
 
 function oneTimeLiteralWatchDelegate (scope, listenFn, valueEq, watchFn) {
-  let isAllDefined = val => !_.some(val, _.isUndefined)
-
-  let unwatch = scope.$watch(() => watchFn(scope), (newVal, oldVal, scope) => {
+  const isAllDefined = val => !_.some(val, _.isUndefined)
+  const unwatch = scope.$watch(() => watchFn(scope), (newVal, oldVal, scope) => {
     if (_.isFunction(listenFn)) {
       listenFn.apply(this, [newVal, oldVal, scope])
 
@@ -169,7 +168,7 @@ function markConstantExpressions (ast, $filter) {
 class Lexer {
   // 解析
   lex (text) {
-    Object.assign(this, {text})
+    Object.assign(this, { text})
     // this.text = text
     this.index = 0
     this.ch = undefined
@@ -196,14 +195,14 @@ class Lexer {
         })
         this.index++
       } else {
-        let ch = this.ch
-        let ch2 = this.ch + this.peek()
-        let ch3 = this.ch + this.peek() + this.peek(2)
-        let op = OPEARTORS[ch]
-        let op2 = OPEARTORS[ch2]
-        let op3 = OPEARTORS[ch3]
+        const ch = this.ch
+        const ch2 = this.ch + this.peek()
+        const ch3 = this.ch + this.peek() + this.peek(2)
+        const op = OPEARTORS[ch]
+        const op2 = OPEARTORS[ch2]
+        const op3 = OPEARTORS[ch3]
         if (op || op2 || op3) {
-          let token = op3 ? ch3 : (op2 ? ch2 : ch)
+          const token = op3 ? ch3 : (op2 ? ch2 : ch)
           this.tokens.push({
             text: token
           })
@@ -241,13 +240,13 @@ class Lexer {
   readNumber () {
     let number = ''
     while (this.index < this.text.length) {
-      let ch = this.text.charAt(this.index).toLowerCase()
+      const ch = this.text.charAt(this.index).toLowerCase()
       if (ch === '.' || this.isNumber(ch)) {
         number += ch
       } else {
         // break
-        let nextCh = this.peek()
-        let prevCh = number.charAt(number.length - 1)
+        const nextCh = this.peek()
+        const prevCh = number.charAt(number.length - 1)
         if (ch === 'e' && this.isExpOperator(nextCh)) {
           number += ch
         } else if (this.isExpOperator(ch) && prevCh === 'e' && nextCh && this.isNumber(nextCh)) {
@@ -272,20 +271,20 @@ class Lexer {
     let rawString = quote
     let escape = false
     while (this.index < this.text.length) {
-      let ch = this.text.charAt(this.index)
+      const ch = this.text.charAt(this.index)
       rawString += ch
       // \\后面的字符，看是不是有转义
       if (escape) {
         // \后面u开头的 是16进制编码，需要用fromCharCode解码
         if (ch === 'u') {
-          let hex = this.text.substring(this.index + 1, this.index + 5)
+          const hex = this.text.substring(this.index + 1, this.index + 5)
           if (!hex.match(/[\da-f]{4}/i)) {
             throw 'invalid unicode escape'
           }
           this.index += 4
           string += String.fromCharCode(parseInt(hex, 16))
         } else {
-          let replacement = ESCAPES[ch]
+          const replacement = ESCAPES[ch]
           if (replacement) {
             string += replacement
           } else {
@@ -312,7 +311,7 @@ class Lexer {
   readIdent () {
     let text = ''
     while (this.index < this.text.length) {
-      let ch = this.text.charAt(this.index)
+      const ch = this.text.charAt(this.index)
       if (this.isIdent(ch) || this.isNumber(ch)) {
         text += ch
       } else {
@@ -356,7 +355,7 @@ class AST {
     return this.program()
   }
   program () {
-    let body = []
+    const body = []
     while (true) {
       if (this.tokens.length) {
         body.push(this.filter())
@@ -418,9 +417,9 @@ class AST {
     return primary
   }
   assignment () {
-    let left = this.ternary()
+    const left = this.ternary()
     if (this.expect('=')) {
-      let right = this.ternary()
+      const right = this.ternary()
       return {
         type: AST.AssignmentExpression,
         left: left,
@@ -430,7 +429,7 @@ class AST {
     return left
   }
   parseArguments () {
-    let args = []
+    const args = []
     if (!this.peek(')')) {
       do {
         args.push(this.assignment())
@@ -439,10 +438,10 @@ class AST {
     return args
   }
   object () {
-    let properties = []
+    const properties = []
     if (!this.peek('}')) {
       do {
-        let property = {
+        const property = {
           type: AST.Property
         }
         if (this.peek().identifier) {
@@ -463,7 +462,7 @@ class AST {
   }
   // 描述array
   arrayDeclaration () {
-    let elements = []
+    const elements = []
     if (!this.peek(']')) {
       do {
         if (this.peek(']')) {
@@ -479,14 +478,14 @@ class AST {
     }
   }
   consume (e) {
-    let token = this.expect(e)
+    const token = this.expect(e)
     if (!token) {
       throw 'unexpect expecting' + e
     }
     return token
   }
   expect (e1, e2, e3, e4) {
-    let token = this.peek(e1, e2, e3, e4)
+    const token = this.peek(e1, e2, e3, e4)
     if (token) {
       return this.tokens.shift()
     }
@@ -494,7 +493,7 @@ class AST {
   peek (e1, e2, e3, e4) {
     // tokens第一个的text是e或者e不存在，就返回token第一个
     if (this.tokens.length > 0) {
-      let text = this.tokens[0].text
+      const text = this.tokens[0].text
       if (text === e1 || text === e2 || text === e3 || text === e4 || (!e1 && !e2 && !e3 && !e4)) {
         return this.tokens[0]
       }
@@ -604,11 +603,11 @@ class AST {
     return left
   }
   ternary () {
-    let test = this.logicalOR()
+    const test = this.logicalOR()
     if (this.expect('?')) {
-      let consequent = this.assignment()
+      const consequent = this.assignment()
       if (this.consume(':')) {
-        let alternate = this.assignment()
+        const alternate = this.assignment()
         return {
           type: AST.ConditionalExpression,
           test: test,
@@ -622,7 +621,7 @@ class AST {
   filter () {
     let left = this.assignment()
     while (this.expect('|')) {
-      let arg = [left]
+      const arg = [left]
       left = {
         type: AST.CallExpression,
         callee: this.identifier(),
@@ -663,9 +662,7 @@ class ASTCompiler {
     this.arguLocals = 'l'
   }
   compile (text) {
-    let ast = this.astBuilder.ast(text)
-
-    // console.log(JSON.stringify(ast,null,2))
+    const ast = this.astBuilder.ast(text)
     markConstantExpressions(ast, this.$filter)
     // vars需要用到的变量v0v1方便函数一开始就var定义好
     // vars一开始放一个，拼var a,b的时候就不用判断length了 偷个懒 囧
@@ -676,12 +673,12 @@ class ASTCompiler {
       filters: {}
     }
     this.recurse(ast)
-    let fnString = this.filterPrefix() +
+    const fnString = this.filterPrefix() +
       'var fn = function(s,l){' +
       'var ' + this.state.vars.join(',') + ' ;' +
       this.state.body.join('') +
       '};return fn;'
-    let fn = new Function('ifDefined', 'filter', fnString)(ifDefined, this.$filter)
+    const fn = new Function('ifDefined', 'filter', fnString)(ifDefined, this.$filter)
     // literal标明是不是一个字面量，不需要计算，比如数字 数字对象都算，但是1+2这种需要计算的就不是
     fn.literal = isLiteral(ast)
     fn.constant = ast.constant
@@ -691,7 +688,7 @@ class ASTCompiler {
     if (_.isEmpty(this.state.filters)) {
       return ''
     } else {
-      let parts = _.map(this.state.filters, (varName, filterName) => {
+      const parts = _.map(this.state.filters, (varName, filterName) => {
         return varName + '=' + 'filter(' + this.escape(filterName) + ')'
       }, this)
       return 'var ' + parts.join(',') + ';'
@@ -710,16 +707,16 @@ class ASTCompiler {
       case AST.Literal:
         return this.escape(ast.value)
       case AST.ArrayExpression:
-        let elements = _.map(ast.elements, element => {
+        const elements = _.map(ast.elements, element => {
           return this.recurse(element)
         }, this)
         return '[' + elements.join(',') + ']'
       case AST.ObjectExpression:
-        let properties = _.map(ast.properties, property => {
-          let key = property.key.type === AST.Identifier
+        const properties = _.map(ast.properties, property => {
+          const key = property.key.type === AST.Identifier
             ? property.key.name
             : this.escape(property.key.value)
-          let value = this.recurse(property.value)
+          const value = this.recurse(property.value)
           return key + ':' + value
         }, this)
         return '{' + properties.join(',') + '}'
@@ -746,12 +743,12 @@ class ASTCompiler {
         return this.arguScope
       case AST.MemberExpression:
         varid = this.nextId()
-        let left = this.recurse(ast.object, undefined, create)
+        const left = this.recurse(ast.object, undefined, create)
         if (context) {
           context.context = left
         }
         if (ast.computed) {
-          let right = this.recurse(ast.property)
+          const right = this.recurse(ast.property)
           if (create) {
             this._if(this.not(this.computedMember(left, right)),
               this.assign(this.computedMember(left, right), '{}'))
@@ -801,7 +798,7 @@ class ASTCompiler {
         }
       // break
       case AST.AssignmentExpression:
-        let leftContext = {}
+        const leftContext = {}
         this.recurse(ast.left, leftContext, true)
         let leftExpr
         if (leftContext.computed) {
@@ -823,7 +820,7 @@ class ASTCompiler {
         return varid
       case AST.ConditionalExpression:
         varid = this.nextId()
-        let testId = this.nextId()
+        const testId = this.nextId()
         this.state.body.push(this.assign(testId, this.recurse(ast.test)))
 
         this._if(testId, this.assign(varid, this.recurse(ast.consequent)))
@@ -851,7 +848,7 @@ class ASTCompiler {
     return id + '=' + value + ';'
   }
   nextId (skip) {
-    let vid = 'v' + (this.state.nextId++)
+    const vid = 'v' + (this.state.nextId++)
     if (!skip) {
       this.state.vars.push(vid)
     }
@@ -900,14 +897,14 @@ function $ParseProvider () {
     return (expr) => {
       switch (typeof expr) {
         case 'string':
-          let lexer = new Lexer()
-          let parser = new Parser(lexer, $filter)
+          const lexer = new Lexer()
+          const parser = new Parser(lexer, $filter)
           let onetime = false
           if (expr.charAt(0) === ':' && expr.charAt(1) === ':') {
             onetime = true
             expr = expr.substring(2)
           }
-          let parseFn = parser.parse(expr)
+          const parseFn = parser.parse(expr)
           if (parseFn.constant) {
             parseFn.$$watchDelegate = constantWatchDelegate
           } else if (onetime) {

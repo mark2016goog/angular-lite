@@ -7,8 +7,8 @@ function setupModuleLoader (window) {
     if (name === 'hasOwnProperty') {
       throw 'hasOwnProperty is not a valid module name'
     }
-    let invokeQueue = []
-    let configBlocks = []
+    const invokeQueue = []
+    const configBlocks = []
     function invokeLater (service, method, arrMethod, queue = invokeQueue) {
       return (...args) => {
         queue[arrMethod || 'push']([service, method, args])
@@ -17,7 +17,7 @@ function setupModuleLoader (window) {
       }
     }
 
-    let moduleInstance = {
+    const moduleInstance = {
       name: name,
       requires: requires,
       constant: invokeLater('$provide', 'constant', 'unshift'),
@@ -51,7 +51,7 @@ function setupModuleLoader (window) {
     }
   }
   ensure(angular, 'module', () => {
-    let modules = {}
+    const modules = {}
     return (name, requires, configFn) => {
       if (requires) {
         return createModule(name, requires, modules, configFn)

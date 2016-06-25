@@ -26,11 +26,11 @@ function $QProvider () {
       return d.promise
     }
     function processQueue (state) {
-      let pending = state.pending
+      const pending = state.pending
       pending.forEach((handler) => {
         // status1是resolve，2是reject
-        let fn = handler[state.status]
-        let defered = handler[0]
+        const fn = handler[state.status]
+        const defered = handler[0]
         // console.log(handler)
         try {
           if (_.isFunction(fn)) {
@@ -53,7 +53,7 @@ function $QProvider () {
         }
       }
       then (onFulfilled, onRejected, onProgress) {
-        let result = new Deferred()
+        const result = new Deferred()
         // status1是resolve，2是reject
         this.$$state.pending.push([result, onFulfilled, onRejected, onProgress])
         if (this.$$state.status > 0) {
@@ -129,7 +129,7 @@ function $QProvider () {
     function defer () {
       return new Deferred()
     }
-    return {defer, reject, when}
+    return { defer, reject, when}
   }]
 }
 export { $QProvider }

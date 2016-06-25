@@ -10,7 +10,7 @@ function $RootScopeProvider () {
       if (_.isNull(obj) || _.isUndefined(obj)) {
         return false
       }
-      var length = obj.length
+      const length = obj.length
       return length === 0 ||
       (_.isNumber(length) && length > 0 && (length - 1) in obj)
     }
@@ -35,16 +35,17 @@ function $RootScopeProvider () {
         this.$$phase = null
       }
       //  监听
-      $watch (watchFn, listenerFn, valueEq) {
-        watchFn = $parse(watchFn)
+      $watch (watchFnOrigin, listenerFn, valueEq) {
+        const watchFn = $parse(watchFnOrigin)
         if (watchFn.$$watchDelegate) {
           return watchFn.$$watchDelegate(this, listenerFn, valueEq, watchFn)
         }
         const watcher = {
-          watchFn: watchFn,
+          watchFn,
           listenerFn: listenerFn || function () {},
           last: initWatchFn,
-          valueEq: !!valueEq // 是否递归比较
+          // 是否递归比较
+          valueEq: !!valueEq
         }
         this.$$watchers.unshift(watcher)
         //  上次dirty出发的watchFn
@@ -63,7 +64,8 @@ function $RootScopeProvider () {
       // arr.push shift arr[0] = 1都检查
       // arr[0].name=2不检查 因为引用没变
       $watchCollection (watchFn, listenerFn) {
-        let newVal, oldVal
+        let newVal
+        let oldVal
         let veryOldVal
         const trackVeryOldValue = (listenerFn.length > 1)
         //  有不同的，就+1外部$watch就能检测到变化
