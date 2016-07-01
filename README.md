@@ -22,12 +22,12 @@
 
 ## 规范
 
-* 使用jslint 具体规范没选好，会用vue或者airbnb的编码规范
+* 使用jslint 具体规用vue
 
 ## 工程化
 * webpack
 
-* 打包现在用的webpack 后续用rollup吧 都说这个号
+* 打包现在用的webpack 后续用rollup吧 都说这个好
 * envify:和ugify一起用，移除所有的调试代码和详细的错误信息,以此来提升效率并缩减文件
 
 争取把上面出现的词，都搞透彻，也不枉我花时间造轮子了
