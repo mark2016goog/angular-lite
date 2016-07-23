@@ -187,6 +187,133 @@ describe('$http', function () {
     expect(response.headers('Content-Type')).toBe('text/plain')
     expect(response.headers('content-type')).toBe('text/plain')
   })
+  it('may returns all response headers', function () {
+    var response
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42
+    }).then(function (r) {
+      response = r
+    })
+    requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello')
+    expect(response.headers()).toEqual({'content-type': 'text/plain'})
+  })
+  it('allows transforming requests with functions', function () {
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      transformRequest: function (data) {
+        return '*' + data + '*'
+      }
+    })
+    expect(requests[0].requestBody).toBe('*42*')
+  })
+  it('allows multiple request transform functions', function () {
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      transformRequest: [function (data) {
+        return '*' + data + '*'
+      }, function (data) {
+        return '-' + data + '-'
+      }]
+    })
+    expect(requests[0].requestBody).toBe('-*42*-')
+  })
+  it('allows settings transforms in defaults', function () {
+    $http.defaults.transformRequest = [function (data) {
+      return '*' + data + '*'
+    }]
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42
+    })
+    expect(requests[0].requestBody).toBe('*42*')
+  })
+  it('passes request headers getter to transforms', function () {
+    $http.defaults.transformRequest = [function (data, headers) {
+      if (headers('Content-Type') === 'text/emphasized') {
+        return '*' + data + '*'
+      } else {
+        return data
+      }
+    }]
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      headers: {
+        'content-type': 'text/emphasized'
+      }
+    })
+    expect(requests[0].requestBody).toBe('*42*')
+  })
+  it('passes request headers getter to transforms', function () {
+    $http.defaults.transformRequest = [function (data, headers) {
+      if (headers('Content-Type') === 'text/emphasized') {
+        return '*' + data + '*'
+      } else {
+        return data
+      }
+    }]
+    $http({
+      method: 'POST',
+      url: 'http://teropa.info',
+      data: 42,
+      headers: {
+        'content-type': 'text/emphasized'
+      }
+    })
+    expect(requests[0].requestBody).toBe('*42*')
+  })
+  // it('allows transforming responses with functions', function () {
+  //   var response
+  //   $http({
+  //     url: 'http://teropa.info',
+  //     transformResponse: function (data) {
+  //       return '*' + data + '*'
+  //     }
+  //   }).then(function (r) {
+  //     response = r
+  //   })
+  //   requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello')
+  //   expect(response.data).toEqual('*Hello*')
+  // })
+  // it('passes response headers to transform functions', function () {
+  //   var response
+  //   $http({
+  //     url: 'http://teropa.info',
+  //     transformResponse: function (data, headers) {
+  //       if (headers('content-type') === 'text/decorated') {
+  //         return '*' + data + '*'
+  //       } else {
+  //         return data
+  //       }
+  //     }
+  //   }).then(function (r) {
+  //     response = r
+  //   })
+  //   requests[0].respond(200, {'Content-Type': 'text/decorated'}, 'Hello')
+  //   expect(response.data).toEqual('*Hello*')
+  // })
+  // it('allows setting default response transforms', function () {
+  //   $http.defaults.transformResponse = [function (data) {
+  //     return '*' + data + '*'
+  //   }]
+  //   var response
+  //   $http({
+  //     url: 'http://teropa.info'
+  //   }).then(function (r) {
+  //     response = r
+  //   })
+  //   requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello')
+  //   expect(response.data).toEqual('*Hello*')
+  // })
+
   it('x')
 
   it('x')
