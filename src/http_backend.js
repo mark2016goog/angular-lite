@@ -6,7 +6,6 @@ function $HttpBackendProvider () {
       const allHeader = _.extend({}, defaults.headers.common, defaults.headers[method.toLowerCase()], headers)
       const xhr = new window.XMLHttpRequest()
       xhr.open(method, url, true)
-
       _.forEach(allHeader, function (v, k) {
         if (post || k.toLowerCase() !== 'content-type') {
           xhr.setRequestHeader(k, v)

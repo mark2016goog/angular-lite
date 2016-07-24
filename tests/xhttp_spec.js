@@ -270,19 +270,20 @@ describe('$http', function () {
     })
     expect(requests[0].requestBody).toBe('*42*')
   })
-  // it('allows transforming responses with functions', function () {
-  //   var response
-  //   $http({
-  //     url: 'http://teropa.info',
-  //     transformResponse: function (data) {
-  //       return '*' + data + '*'
-  //     }
-  //   }).then(function (r) {
-  //     response = r
-  //   })
-  //   requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello')
-  //   expect(response.data).toEqual('*Hello*')
-  // })
+  it('allows transforming responses with functions', function () {
+    var response
+    $http.defaults.transformRequest = []
+    $http({
+      url: 'http://teropa.info',
+      transformResponse: function (data) {
+        return '*' + data + '*'
+      }
+    }).then(function (r) {
+      response = r
+    })
+    requests[0].respond(200, {'Content-Type': 'text/plain'}, 'Hello')
+    expect(response.data).toEqual('*Hello*')
+  })
   // it('passes response headers to transform functions', function () {
   //   var response
   //   $http({

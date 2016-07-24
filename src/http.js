@@ -25,7 +25,7 @@ function headersGetter (headers) {
     headersObj = headersObj || parseHeaders(headers)
     if (name) {
       return headersObj[name.toLowerCase()]
-    }else {
+    } else {
       return headersObj
     }
   }
@@ -35,11 +35,14 @@ function transformData (data, headers, transform) {
     return transform(data, headers)
   } else {
     return _.reduce(transform, function (data, fn) {
+      // console.log(data, fn.toString())
       return fn(data, headers)
     }, data)
   }
 }
+
 function parseHeaders (headers) {
+  // console.log(headers)
   if (_.isObject(headers)) {
     return _.transform(headers, function (result, v, k) {
       result[_.trim(k.toLowerCase())] = _.trim(v)
@@ -59,11 +62,11 @@ function parseHeaders (headers) {
 function $HttpProvider () {
   this.defaults = defaults
   this.$get = ['$httpBackend', '$q', '$rootScope', function ($httpBackend, $q, $rootScope) {
-    function $http ({ method = 'GET', url, data, headers, transformRequest=defaults.transformRequest }) {
+    function $http ({ method = 'GET', url, data, headers, transformRequest = defaults.transformRequest, transformResponse = defaults.transformResponse }) {
       const deferred = $q.defer()
       const reqData = transformData(data, headersGetter(headers), transformRequest)
-
       function done (status, response, headersString, statusText) {
+        // console.log(headersString)
         status = Math.max(status, 0)
         deferred[isSuccess(status) ? 'resolve' : 'reject']({
           status,
@@ -76,8 +79,16 @@ function $HttpProvider () {
           $rootScope.$apply()
         }
       }
+      function transformResponseFn (response) {
+        // console.log(response)
+        if (response.data) {
+          response.data = transformData(response.data, response.headers,
+            transformResponse)
+        }
+        return response
+      }
       $httpBackend(method, url, reqData, done, headers)
-      return deferred.promise
+      return deferred.promise.then(transformResponseFn)
     }
     $http.defaults = defaults
     return $http
