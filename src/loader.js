@@ -11,6 +11,7 @@ function setupModuleLoader (window) {
     const configBlocks = []
     function invokeLater (service, method, arrMethod, queue = invokeQueue) {
       return (...args) => {
+        // console.log(args)
         queue[arrMethod || 'push']([service, method, args])
         // console.log(JSON.stringify(invokeQueue,null,2))
         return moduleInstance
@@ -27,6 +28,7 @@ function setupModuleLoader (window) {
       decorator: invokeLater('$provide', 'decorator'),
       value: invokeLater('$provide', 'value'),
       filter: invokeLater('$filterProvider', 'register'),
+      directive: invokeLater('$compileProvider', 'directive'),
       config: invokeLater('$injector', 'invoke', 'push', configBlocks),
       run: function (fn) {
         moduleInstance._runBlocks.push(fn)
