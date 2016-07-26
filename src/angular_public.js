@@ -5,6 +5,7 @@ import { $RootScopeProvider } from './scope'
 import { $QProvider } from './q'
 import { $HttpBackendProvider } from './http_backend'
 import { $HttpProvider } from './http'
+import { $CompileProvider } from './compile'
 /**
  * 注册全局模块
  */
@@ -17,6 +18,7 @@ function publishExternalAPI () {
   ngModule.provider('$q', $QProvider)
   ngModule.provider('$httpBackend', $HttpBackendProvider)
   ngModule.provider('$http', $HttpProvider)
+  ngModule.provider('$compile', $CompileProvider)
 }
 
 export { publishExternalAPI }
