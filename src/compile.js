@@ -18,7 +18,15 @@ function $CompileProvider ($provide) {
 
         $provide.factory(name + 'Directive', ['$injector', function ($injector) {
           var factories = hasDirectives[name]
-          return _.map(factories, $injector.invoke)
+          // directive.name = directive.name || name
+          // $injector.invoke
+          return _.map(factories, (factory, i) => {
+            let directive = $injector.invoke(factory)
+            directive.name = directive.name || name
+            directive.priority = directive.priority || 0
+            directive.index = i
+            return directive
+          })
         }])
       }
       hasDirectives[name].push(directiveFactory)
@@ -51,7 +59,20 @@ function $CompileProvider ($provide) {
         let normalizedClassName = directiveNormalize(cls)
         addDirective(directives, normalizedClassName)
       })
+      directives.sort(byPriority)
       return directives
+    }
+    function byPriority (a, b) {
+      let diff = b.priority - a.priority
+      if (diff !== 0) {
+        return diff
+      } else {
+        if (a.name !== b.name) {
+          return (a.name < b.name ? -1 : 1)
+        } else {
+          return a.index - b.index
+        }
+      }
     }
     function applyDirectivesToNode (directives, compileNode) {
       var $compileNode = $(compileNode)
