@@ -1,8 +1,11 @@
 let $ = require('jquery')
+const PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i
 function nodeName (element) {
   return element.nodeName ? element.nodeName : element[0].nodeName
 }
-
+function directiveNormalize (name) {
+  return _.camelCase(name.replace(PREFIX_REGEXP, ''))
+}
 function $CompileProvider ($provide) {
   var hasDirectives = {}
   this.directive = function (name, directiveFactory) {
@@ -35,8 +38,12 @@ function $CompileProvider ($provide) {
     }
     function collectDirectives (node) {
       let directives = []
-      let normalizedNodeName = _.camelCase(nodeName(node).toLowerCase())
+      let normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase())
       addDirective(directives, normalizedNodeName)
+      _.forEach(node.attributes, attr => {
+        const normalizedAttrName = directiveNormalize(attr.name.toLowerCase())
+        addDirective(directives, normalizedAttrName)
+      })
       return directives
     }
     function applyDirectivesToNode (directives, compileNode) {
