@@ -1,6 +1,6 @@
 import { setupModuleLoader } from '../src/loader'
 import { createInjector } from '../src/injector'
-describe('测试injector', () => {
+xdescribe('测试injector', () => {
   beforeEach(function () {
     delete window.angular
     setupModuleLoader(window)

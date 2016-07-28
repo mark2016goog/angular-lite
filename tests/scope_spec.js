@@ -2,7 +2,7 @@ let _ = require('lodash')
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
 
-describe('Scope', () => {
+xdescribe('Scope', () => {
   describe('digest', () => {
     let scope
     beforeEach(function () {

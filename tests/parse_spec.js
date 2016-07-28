@@ -4,7 +4,7 @@
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
 
-describe('Parse', () => {
+xdescribe('Parse', () => {
   var parse
   beforeEach(function () {
     publishExternalAPI()

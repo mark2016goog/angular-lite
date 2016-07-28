@@ -1,7 +1,7 @@
 import { publishExternalAPI } from '../src/angular_public'
 import { createInjector } from '../src/injector'
 
-describe('$q', function () {
+xdescribe('$q', function () {
   var $q,$rootScope
   beforeEach(function () {
     publishExternalAPI()
