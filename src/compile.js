@@ -59,7 +59,7 @@ function $CompileProvider ($provide) {
 
   // $provide.factory(name + 'Directive', directiveFactory)
   }
-  this.$get = ['$injector', function ($injector) {
+  this.$get = ['$injector', '$rootScope', function ($injector, $rootScope) {
     class Attributes {
       constructor (element) {
         this.$$element = element
@@ -69,15 +69,44 @@ function $CompileProvider ($provide) {
         if (isBooleanAttribute(this.$$element[0], key)) {
           this.$$element.prop(key, value)
         }
-
         if (writeAttr !== false) {
           this.$$element.attr(key, value)
         }
+        if (this.$$observers) {
+          _.forEach(this.$$observers[key], (observer) => {
+            try {
+              observer(value)
+            } catch(e) {
+              console.log(e)
+            }
+          })
+        }
+      }
+      $observe (key, fn) {
+        this.$$observers = this.$$observers || {}
+        this.$$observers[key] = this.$$observers[key] || []
+        this.$$observers[key].push(fn)
+        $rootScope.$evalAsync(() => {
+          fn(this[key])
+        })
+        return () => {
+          let index = this.$$observers[key].indexOf(fn)
+          if (index >= 0) {
+            this.$$observers[key].splice(index, 1)
+          }
+        }
+      }
+      $addClass (classVal) {
+        this.$$element.addClass(classVal)
+      }
+      $removeClass (classVal) {
+        this.$$element.removeClass(classVal)
       }
     }
     function addDirective (directives, name) {
       if (hasDirectives.hasOwnProperty(name)) {
         directives.push.apply(directives, $injector.get(name + 'Directive'))
+        return true
       }
     }
     function collectDirectives (node, attrs) {
@@ -100,7 +129,9 @@ function $CompileProvider ($provide) {
       })
       _.forEach(node.classList, cls => {
         let normalizedClassName = directiveNormalize(cls)
-        addDirective(directives, normalizedClassName)
+        if (addDirective(directives, normalizedClassName)) {
+          attrs[normalizedClassName] = undefined
+        }
       })
       directives.sort(byPriority)
       return directives
