@@ -7,6 +7,22 @@ function makeInjectorWithDirectives (...args) {
     $compileProvider.directive.apply($compileProvider, args)
   }])
 }
+function registerAndCompile (dirName, domString, callback) {
+  var givenAttrs
+  var injector = makeInjectorWithDirectives(dirName, function () {
+    return {
+      restrict: 'EACM',
+      compile: function (element, attrs) {
+        givenAttrs = attrs
+      }
+    }
+  })
+  injector.invoke(function ($compile) {
+    var el = $(domString)
+    $compile(el)
+    callback(el, givenAttrs)
+  })
+}
 describe('$compile', function () {
   beforeEach(function () {
     delete window.angular
@@ -469,5 +485,147 @@ describe('$compile', function () {
       $compile(el)
       expect(compilations).toEqual(['parent'])
     })
+  })
+  // describe('attributes', function () {
+  it('passes the element attributes to the compile function', function () {
+    var injector = makeInjectorWithDirectives('myDirective', function () {
+      return {
+        restrict: 'E',
+        compile: function (element, attrs) {
+          element.data('givenAttrs', attrs)
+        }
+      }
+    })
+    injector.invoke(function ($compile) {
+      var el = $('<my-directive my-attr="1" my-other-attr="two"></my-directive>')
+      $compile(el)
+      expect(el.data('givenAttrs').myAttr).toEqual('1')
+      expect(el.data('givenAttrs').myOtherAttr).toEqual('two')
+    })
+  })
+  it('trims attribute values', function () {
+    registerAndCompile(
+      'myDirective',
+      '<my-directive my-attr=" val "></my-directive>',
+      function (element, attrs) {
+        expect(attrs.myAttr).toEqual('val')
+      }
+    )
+  })
+  it('sets the value of boolean attributes to true', function () {
+    registerAndCompile(
+      'myDirective',
+      '<input my-directive disabled>',
+      function (element, attrs) {
+        expect(attrs.disabled).toBe(true)
+      }
+    )
+  })
+  it('does not set the value of custom boolean attributes to true', function () {
+    registerAndCompile(
+      'myDirective',
+      '<input my-directive whatever>',
+      function (element, attrs) {
+        expect(attrs.whatever).toEqual('')
+      }
+    )
+  })
+  it('overrides attributes with ng-attr- versions', function () {
+    registerAndCompile(
+      'myDirective',
+      '<input my-directive ng-attr-whatever="42" whatever="41">',
+      function (element, attrs) {
+        expect(attrs.whatever).toEqual('42')
+      }
+    )
+  })
+  it('allows setting attributes', function () {
+    registerAndCompile(
+      'myDirective',
+      '<my-directive attr="true"></my-directive>',
+      function (element, attrs) {
+        attrs.$set('attr', 'false')
+        expect(attrs.attr).toEqual('false')
+      }
+    )
+  })
+  it('sets attributes to DOM', function () {
+    registerAndCompile(
+      'myDirective',
+      '<my-directive attr="true"></my-directive>',
+      function (element, attrs) {
+        attrs.$set('attr', 'false')
+        expect(element.attr('attr')).toEqual('false')
+      }
+    )
+  // })
+  })
+  it('does not set attributes to DOM when flag is false', function () {
+    registerAndCompile(
+      'myDirective',
+      '<my-directive attr="true"></my-directive>',
+      function (element, attrs) {
+        attrs.$set('attr', 'false', false)
+        expect(element.attr('attr')).toEqual('true')
+      }
+    )
+  })
+  it('shares attributes between directives', function () {
+    var attrs1, attrs2
+    var injector = makeInjectorWithDirectives({
+      myDir: function () {
+        return {
+          compile: function (element, attrs) {
+            attrs1 = attrs
+          }
+        }
+      },
+      myOtherDir: function () {
+        return {
+          compile: function (element, attrs) {
+            attrs2 = attrs
+          }
+        }
+      }
+    })
+    injector.invoke(function ($compile) {
+      var el = $('<div my-dir my-other-dir></div>')
+      $compile(el)
+      expect(attrs1).toBe(attrs2)
+    })
+  })
+  it('sets prop for boolean attributes', function () {
+    registerAndCompile(
+      'myDirective',
+      '<input my-directive>',
+      function (element, attrs) {
+        attrs.$set('disabled', true)
+        expect(element.prop('disabled')).toBe(true)
+      }
+    )
+  })
+  it('sets prop for boolean attributes even when not flushing', function () {
+    registerAndCompile(
+      'myDirective',
+      '<input my-directive>',
+      function (element, attrs) {
+        attrs.$set('disabled', true, false)
+        expect(element.prop('disabled')).toBe(true)
+      }
+    )
+  })
+  xit('calls observer immediately when attribute is $set', function () {
+    registerAndCompile(
+      'myDirective',
+      '<my-directive some-attribute="42"></my-directive>',
+      function (element, attrs) {
+        var gotValue
+        attrs.$observe('someAttribute', function (value) {
+          gotValue = value
+        })
+        attrs.$set('someAttribute', '43')
+        expect(gotValue).toEqual('43')
+      }
+    )
   })
 })

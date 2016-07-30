@@ -1,10 +1,31 @@
 let $ = require('jquery')
 const PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i
+var BOOLEAN_ATTRS = {
+  multiple: true,
+  selected: true,
+  checked: true,
+  disabled: true,
+  readOnly: true,
+  required: true,
+  open: true
+}
+var BOOLEAN_ELEMENTS = {
+  INPUT: true,
+  SELECT: true,
+  OPTION: true,
+  TEXTAREA: true,
+  BUTTON: true,
+  FORM: true,
+  DETAILS: true
+}
 function nodeName (element) {
   return element.nodeName ? element.nodeName : element[0].nodeName
 }
 function directiveNormalize (name) {
   return _.camelCase(name.replace(PREFIX_REGEXP, ''))
+}
+function isBooleanAttribute (node, attrName) {
+  return BOOLEAN_ATTRS[attrName] && BOOLEAN_ELEMENTS[node.nodeName]
 }
 function $CompileProvider ($provide) {
   var hasDirectives = {}
@@ -39,21 +60,43 @@ function $CompileProvider ($provide) {
   // $provide.factory(name + 'Directive', directiveFactory)
   }
   this.$get = ['$injector', function ($injector) {
+    class Attributes {
+      constructor (element) {
+        this.$$element = element
+      }
+      $set (key, value, writeAttr) {
+        this[key] = value
+        if (isBooleanAttribute(this.$$element[0], key)) {
+          this.$$element.prop(key, value)
+        }
+
+        if (writeAttr !== false) {
+          this.$$element.attr(key, value)
+        }
+      }
+    }
     function addDirective (directives, name) {
       if (hasDirectives.hasOwnProperty(name)) {
         directives.push.apply(directives, $injector.get(name + 'Directive'))
       }
     }
-    function collectDirectives (node) {
+    function collectDirectives (node, attrs) {
       let directives = []
       let normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase())
       addDirective(directives, normalizedNodeName)
       _.forEach(node.attributes, attr => {
         let normalizedAttrName = directiveNormalize(attr.name.toLowerCase())
-        if (/^ngAttr[A-Z]/.test(normalizedAttrName)) {
+        const isNgAttr = /^ngAttr[A-Z]/.test(normalizedAttrName)
+        if (isNgAttr) {
           normalizedAttrName = normalizedAttrName[6].toLowerCase() + normalizedAttrName.substring(7)
         }
         addDirective(directives, normalizedAttrName)
+        if (isNgAttr || !attrs.hasOwnProperty(normalizedAttrName)) {
+          attrs[normalizedAttrName] = attr.value.trim()
+          if (isBooleanAttribute(node, normalizedAttrName)) {
+            attrs[normalizedAttrName] = true
+          }
+        }
       })
       _.forEach(node.classList, cls => {
         let normalizedClassName = directiveNormalize(cls)
@@ -74,7 +117,7 @@ function $CompileProvider ($provide) {
         }
       }
     }
-    function applyDirectivesToNode (directives, compileNode) {
+    function applyDirectivesToNode (directives, compileNode, attrs) {
       const $compileNode = $(compileNode)
       let terminalPriority = -Number.MAX_VALUE
       let terminal = false
@@ -83,7 +126,7 @@ function $CompileProvider ($provide) {
           return false
         }
         if (directive.compile) {
-          directive.compile($compileNode)
+          directive.compile($compileNode, attrs)
         }
         if (directive.terminal) {
           terminal = true
@@ -94,9 +137,11 @@ function $CompileProvider ($provide) {
     }
     function compileNodes ($compileNodes) {
       _.forEach($compileNodes, (node) => {
-        let directives = collectDirectives(node)
+        // console.log(node.attr)
+        let attrs = new Attributes($(node))
+        let directives = collectDirectives(node, attrs)
 
-        let terminal = applyDirectivesToNode(directives, node)
+        let terminal = applyDirectivesToNode(directives, node, attrs)
         if (!terminal && node.childNodes && node.childNodes.length) {
           compileNodes(node.childNodes)
         }
