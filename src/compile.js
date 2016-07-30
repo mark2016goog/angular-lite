@@ -182,7 +182,10 @@ function $CompileProvider ($provide) {
       })
     }
     function compile ($compileNodes) {
-      return compileNodes($compileNodes)
+      compileNodes($compileNodes)
+      return function publicLineFn (scope) {
+        $compileNodes.data('$scope', scope)
+      }
     }
     return compile
   }]
