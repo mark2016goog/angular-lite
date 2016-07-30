@@ -102,6 +102,9 @@ function $CompileProvider ($provide) {
       $removeClass (classVal) {
         this.$$element.removeClass(classVal)
       }
+      $updateClass (newClass, oldClass) {
+        this.$$element.removeClass(oldClass).addClass(newClass)
+      }
     }
     function addDirective (directives, name) {
       if (hasDirectives.hasOwnProperty(name)) {
