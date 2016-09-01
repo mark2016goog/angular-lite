@@ -45,6 +45,9 @@ function $CompileProvider ($provide) {
             let directive = $injector.invoke(factory)
             directive.name = directive.name || name
             directive.priority = directive.priority || 0
+            if (directive.link && !directive.compile) {
+              directive.compile = _.constant(directive.link)
+            }
             directive.index = i
             return directive
           })
@@ -155,36 +158,103 @@ function $CompileProvider ($provide) {
       const $compileNode = $(compileNode)
       let terminalPriority = -Number.MAX_VALUE
       let terminal = false
+      let preLinkFns = []
+      let postLinkFns = []
+      let newScopeDirective
       _.forEach(directives, function (directive) {
         if (directive.priority < terminalPriority) {
           return false
         }
+        if (directive.scope) {
+          newScopeDirective = newScopeDirective || directive
+        }
         if (directive.compile) {
-          directive.compile($compileNode, attrs)
+          let linkFn = directive.compile($compileNode, attrs)
+          if (_.isFunction(linkFn)) {
+            postLinkFns.push(linkFn)
+          }else if (linkFn) {
+            if (linkFn.pre) {
+              preLinkFns.push(linkFn.pre)
+            }
+            if (linkFn.post) {
+              postLinkFns.push(linkFn.post)
+            }
+          }
         }
         if (directive.terminal) {
           terminal = true
           terminalPriority = directive.priority
         }
       })
-      return terminal
+      function nodeLinkFn (childLinkFn, scope, linkNode) {
+        let $element = $(linkNode)
+        _.forEach(preLinkFns, linkFn => {
+          linkFn(scope, $element, attrs)
+        })
+        if (childLinkFn) {
+          childLinkFn(scope, linkNode.childNodes)
+        }
+        _.forEachRight(postLinkFns, linkFn => {
+          linkFn(scope, $element, attrs)
+        })
+      }
+      nodeLinkFn.terminal = terminal
+      nodeLinkFn.scope = newScopeDirective && newScopeDirective.scope
+      return nodeLinkFn
     }
     function compileNodes ($compileNodes) {
-      _.forEach($compileNodes, (node) => {
+      let linkFns = []
+      _.forEach($compileNodes, (node, i) => {
         // console.log(node.attr)
         let attrs = new Attributes($(node))
         let directives = collectDirectives(node, attrs)
-
-        let terminal = applyDirectivesToNode(directives, node, attrs)
-        if (!terminal && node.childNodes && node.childNodes.length) {
-          compileNodes(node.childNodes)
+        let nodeLinkFn
+        if (directives.length) {
+          nodeLinkFn = applyDirectivesToNode(directives, node, attrs)
+        }
+        let childLinkFn
+        // let terminal = applyDirectivesToNode(directives, node, attrs)
+        if ((!nodeLinkFn || !nodeLinkFn.terminal) && node.childNodes && node.childNodes.length) {
+          childLinkFn = compileNodes(node.childNodes)
+        }
+        if (nodeLinkFn && nodeLinkFn.scope) {
+          attrs.$$element.addClass('ng-scope')
+        }
+        if (nodeLinkFn || childLinkFn) {
+          linkFns.push({
+            nodeLinkFn,
+            childLinkFn,
+            idx: i
+          })
         }
       })
+      function compositeLinkFn (scope, linkNodes) {
+        var stableNodeList = []
+        _.forEach(linkFns, function (linkFn) {
+          var nodeIdx = linkFn.idx
+          stableNodeList[nodeIdx] = linkNodes[nodeIdx]
+        })
+        _.forEach(linkFns, linkFn => {
+          let node = stableNodeList[linkFns.idx]
+          if (linkFn.nodeLinkFn) {
+            if (linkFn.nodeLinkFn.scope) {
+              scope = scope.$new()
+              $(node).data('$scope', scope)
+            }
+            linkFn.nodeLinkFn(linkFn.childLinkFn, scope, node)
+          }else {
+            linkFn.childLinkFn(scope, node.childNodes)
+          }
+        })
+      }
+      return compositeLinkFn
     }
     function compile ($compileNodes) {
-      compileNodes($compileNodes)
+      // console.log($compileNodes)
+      const compositeLinkFn = compileNodes($compileNodes)
       return function publicLineFn (scope) {
         $compileNodes.data('$scope', scope)
+        compositeLinkFn(scope, $compileNodes)
       }
     }
     return compile
